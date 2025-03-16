@@ -1,0 +1,35 @@
+{
+    "id": "pay_29QQoUBi66xm2f",
+    "entity": "payment",
+    "amount": 50000,
+    "currency": "INR",
+    "status": "captured",
+    "order_id": "order_9A33XWu170gUtm",
+    "invoice_id": null,
+    "international": false,
+    "method": "card",
+    "amount_refunded": 0,
+    "refund_status": null,
+    "captured": true,
+    "description": "Payment for Order #1234",
+    "card_id": "card_8SfVqRwtdP35Jf",
+    "bank": null,
+    "wallet": null,
+    "vpa": null,
+    "email": "customer@example.com",
+    "contact": "+919876543210",
+    "notes": {
+        "merchant_order_id": "1234"
+    },
+    "fee": 1180,
+    "tax": 180,
+    "error_code": null,
+    "error_description": null,
+    "error_source": null,
+    "error_step": null,
+    "error_reason": null,
+    "acquirer_data": {
+        "auth_code": "123456"
+    },
+    "created_at": 1601299422
+}

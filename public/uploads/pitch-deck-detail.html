@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css" />
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <title>Unlock Startup</title>
+</head>
+
+<body>
+  <div class="main-wrapper no-banner">
+    <header class="header-wrapper">
+      <div class="desktop">
+          <nav class="navbar navbar-expand-md  navbar-dark">
+              <div class="container-fluid">
+                  <a class="navbar-brand col-md-2" href="#">
+                      <img src="images/Logo.png" alt="unlock Startup">
+                  </a>
+                  <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                      data-bs-target="#collapsibleNavbar">
+                      <span class="navbar-toggler-icon"></span>
+                  </button>
+                  <div class="collapse navbar-collapse col-left  justify-content-end" id="collapsibleNavbar">
+                      <ul class="navbar-nav align-items-center  justify-content-end  col-md-7">
+                          <li class="nav-item">
+                              <a class="nav-link" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="23"
+                                      height="23" viewBox="0 0 23 23" fill="none">
+                                      <path
+                                          d="M9.07926 15.3336L17.8777 18.4807C18.0255 18.5338 18.1834 18.5533 18.3397 18.5376C18.4959 18.5219 18.6467 18.4714 18.781 18.3899C18.9153 18.3085 19.0297 18.198 19.1158 18.0666C19.202 17.9353 19.2576 17.7863 19.2788 17.6307L21.0738 4.0626C21.183 3.23651 20.3272 2.62031 19.572 2.97968L2.51467 11.1217C1.67134 11.5242 1.73459 12.7413 2.61626 13.0546L4.95459 13.8865L6.22917 14.334M12.4583 16.5411L10.5513 19.7285C9.92834 20.5028 8.67388 20.0648 8.67388 19.0739V16.5219C8.67391 16.0403 8.85524 15.5764 9.1818 15.2224L12.8915 11.1974"
+                                          stroke="black" stroke-opacity="0.6" stroke-width="1.5"
+                                          stroke-linecap="round" stroke-linejoin="round" />
+                                  </svg>
+                                  <span>Startup <br>Challenges</span></a>
+                          </li>
+                          <li class="nav-item">
+                              <a class="nav-link" href="#">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"
+                                  fill="none">
+                                  <g clip-path="url(#clip0_1_509)">
+                                      <path
+                                          d="M16.5 3.66667V0M6.41666 16.5H4.58332M17.4167 16.5H8.24999M6.41666 12.8333H4.58332M17.4167 12.8333H8.24999M5.49999 3.66667V0M0.916656 8.25H21.0833M0.916656 21.0833H21.0833V3.66667H0.916656V21.0833Z"
+                                          stroke="black" stroke-opacity="0.6" stroke-width="1.5" />
+                                  </g>
+                                  <defs>
+                                      <clipPath id="clip0_1_509">
+                                          <rect width="22" height="22" fill="white" />
+                                      </clipPath>
+                                  </defs>
+                              </svg>
+                                 <span>Events</span>
+                              </a>
+                          </li>
+                          <li class="nav-item">
+                              <a class="nav-link" href="#">
+                                  <img src="images/iconoir_presentation.png" alt="iconoir presentation">
+                                 
+                                  <span>Pitch Desk</span>
+                              </a>
+                          </li>
+                          <li class="nav-item">
+                              <a class="nav-link" href="#">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                      fill="none">
+                                      <path
+                                          d="M17.999 3C18.1168 2.99991 18.2329 3.02757 18.3381 3.08074C18.4432 3.1339 18.5343 3.21107 18.604 3.306L18.659 3.393L21.922 9.421L21.96 9.514L21.972 9.554L21.992 9.656L21.998 9.75C21.9975 9.81754 21.9884 9.88474 21.971 9.95L21.924 10.075L21.886 10.144C21.8632 10.1796 21.8381 10.2136 21.811 10.246L21.871 10.168L21.846 10.203L12.596 20.708C12.5201 20.811 12.4173 20.8913 12.299 20.94L12.201 20.973L12.123 20.99L12 21L11.9 20.994L11.782 20.968C11.7208 20.9507 11.6623 20.9251 11.608 20.892L11.599 20.885C11.5517 20.8556 11.508 20.8207 11.469 20.781L2.179 10.235L2.153 10.203L2.113 10.144C2.05648 10.0524 2.02033 9.94978 2.007 9.843L2 9.75L2.003 9.684L2.016 9.595L2.04 9.509L2.062 9.45L2.09 9.393L5.34 3.393C5.39603 3.28946 5.47565 3.20056 5.57242 3.1335C5.66918 3.06644 5.78038 3.02311 5.897 3.007L5.999 3H17.999ZM14.997 10.5H8.998L11.998 18.187L14.997 10.5ZM7.389 10.5H4.409L9.76 16.574L7.389 10.5ZM19.587 10.5H16.608L14.24 16.57L19.587 10.5ZM8.971 4.5H6.445L4.007 9H7.531L8.971 4.5ZM13.451 4.5H10.546L9.105 9H14.89L13.451 4.5ZM17.551 4.5H15.026L16.466 9H19.988L17.551 4.5Z"
+                                          fill="black" fill-opacity="0.6" />
+                                  </svg>
+                                  <span>Premium <br>Challenges</span>
+                              </a>
+                          </li>
+                          <li>
+                          <li class="nav-item">
+                              <a class="nav-link" href="#">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"
+                                      fill="none">
+                                      <g clip-path="url(#clip0_1_495)">
+                                          <path
+                                              d="M2.93333 18.3333V19.0667H4.4V18.3333H2.93333ZM10.2667 18.3333V19.0667H11.7333V18.3333H10.2667ZM4.4 18.3333V17.6H2.93333V18.3333H4.4ZM10.2667 17.6V18.3333H11.7333V17.6H10.2667ZM7.33333 14.6667C8.1113 14.6667 8.85741 14.9757 9.40751 15.5258C9.95762 16.0759 10.2667 16.822 10.2667 17.6H11.7333C11.7333 16.433 11.2698 15.3139 10.4446 14.4887C9.61944 13.6636 8.50029 13.2 7.33333 13.2V14.6667ZM4.4 17.6C4.4 16.822 4.70905 16.0759 5.25915 15.5258C5.80926 14.9757 6.55537 14.6667 7.33333 14.6667V13.2C6.16638 13.2 5.04722 13.6636 4.22206 14.4887C3.3969 15.3139 2.93333 16.433 2.93333 17.6H4.4ZM7.33333 5.86667C6.55537 5.86667 5.80926 6.17571 5.25915 6.72582C4.70905 7.27593 4.4 8.02203 4.4 8.8H5.86667C5.86667 8.41102 6.02119 8.03796 6.29624 7.76291C6.5713 7.48786 6.94435 7.33333 7.33333 7.33333V5.86667ZM10.2667 8.8C10.2667 8.02203 9.95762 7.27593 9.40751 6.72582C8.85741 6.17571 8.1113 5.86667 7.33333 5.86667V7.33333C7.72232 7.33333 8.09537 7.48786 8.37042 7.76291C8.64548 8.03796 8.8 8.41102 8.8 8.8H10.2667ZM7.33333 11.7333C8.1113 11.7333 8.85741 11.4243 9.40751 10.8742C9.95762 10.3241 10.2667 9.57797 10.2667 8.8H8.8C8.8 9.18898 8.64548 9.56204 8.37042 9.83709C8.09537 10.1121 7.72232 10.2667 7.33333 10.2667V11.7333ZM7.33333 10.2667C6.94435 10.2667 6.5713 10.1121 6.29624 9.83709C6.02119 9.56204 5.86667 9.18898 5.86667 8.8H4.4C4.4 9.57797 4.70905 10.3241 5.25915 10.8742C5.80926 11.4243 6.55537 11.7333 7.33333 11.7333V10.2667ZM2.2 4.4H19.8V2.93333H2.2V4.4ZM20.5333 5.13333V16.8667H22V5.13333H20.5333ZM19.8 17.6H2.2V19.0667H19.8V17.6ZM1.46667 16.8667V5.13333H0V16.8667H1.46667ZM2.2 17.6C2.00551 17.6 1.81898 17.5227 1.68146 17.3852C1.54393 17.2477 1.46667 17.0612 1.46667 16.8667H0C0 17.4501 0.231785 18.0097 0.644365 18.4223C1.05695 18.8349 1.61652 19.0667 2.2 19.0667V17.6ZM20.5333 16.8667C20.5333 17.0612 20.4561 17.2477 20.3185 17.3852C20.181 17.5227 19.9945 17.6 19.8 17.6V19.0667C20.3835 19.0667 20.9431 18.8349 21.3556 18.4223C21.7682 18.0097 22 17.4501 22 16.8667H20.5333ZM19.8 4.4C19.9945 4.4 20.181 4.47726 20.3185 4.61479C20.4561 4.75232 20.5333 4.93884 20.5333 5.13333H22C22 4.54986 21.7682 3.99028 21.3556 3.5777C20.9431 3.16512 20.3835 2.93333 19.8 2.93333V4.4ZM2.2 2.93333C1.61652 2.93333 1.05695 3.16512 0.644365 3.5777C0.231785 3.99028 0 4.54986 0 5.13333H1.46667C1.46667 4.93884 1.54393 4.75232 1.68146 4.61479C1.81898 4.47726 2.00551 4.4 2.2 4.4V2.93333ZM13.2 8.8H17.6V7.33333H13.2V8.8ZM13.2 13.2H17.6V11.7333H13.2V13.2ZM0 22H22V20.5333H0V22ZM4.4 0V3.66667H5.86667V0H4.4ZM16.1333 0V3.66667H17.6V0H16.1333Z"
+                                              fill="black" fill-opacity="0.6" />
+                                      </g>
+                                      <defs>
+                                          <clipPath id="clip0_1_495">
+                                              <rect width="22" height="22" fill="white" />
+                                          </clipPath>
+                                      </defs>
+                                  </svg>
+                                  <span>Contact Us</span>
+                              </a>
+                          </li>
+                      </ul>
+                      <div class="col-right col-md-4 d-flex justify-content-end">
+                          <ul class="navbar-nav align-items-center ">
+                              <li class="nav-item">
+                                  <a class="nav-link" href="#">
+                                      <span>Business</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                          <path d="M4 21C3.45 21 2.97933 20.8043 2.588 20.413C2.19667 20.0217 2.00067 19.5507 2 19V8C2 7.45 2.196 6.97933 2.588 6.588C2.98 6.19667 3.45067 6.00067 4 6H8V4C8 3.45 8.196 2.97933 8.588 2.588C8.98 2.19667 9.45067 2.00067 10 2H14C14.55 2 15.021 2.196 15.413 2.588C15.805 2.98 16.0007 3.45067 16 4V6H20C20.55 6 21.021 6.196 21.413 6.588C21.805 6.98 22.0007 7.45067 22 8V19C22 19.55 21.8043 20.021 21.413 20.413C21.0217 20.805 20.5507 21.0007 20 21H4ZM10 6H14V4H10V6ZM20 15H15V17H9V15H4V19H20V15ZM11 15H13V13H11V15ZM4 13H9V11H15V13H20V8H4V13Z" fill="#F15429" fill-opacity="0.8"></path>
+                                      </svg></a>
+                              </li>
+                              <li class="nav-item">
+                                 
+                                  <a type="button" class="nav-link" data-bs-toggle="modal" data-bs-target="#myModal" href="#">
+                                      <span>Login</span>
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                          <path d="M12 20C14.1217 20 16.1566 19.1571 17.6569 17.6569C19.1571 16.1566 20 14.1217 20 12C20 9.87827 19.1571 7.84344 17.6569 6.34315C16.1566 4.84285 14.1217 4 12 4" stroke="white" stroke-width="1.5" stroke-linecap="round"></path>
+                                          <path d="M4 12H14M14 12L11 9M14 12L11 15" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                                      </svg>
+  
+                                  </a>
+                              </li>
+                              <li class="nav-item">
+                                  <a class="nav-link" href="#">
+                                      <span class="search-icon">
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                              <path fill-rule="evenodd" clip-rule="evenodd" d="M13.5277 12.3647L17.9159 16.7529C18.0701 16.9073 18.1567 17.1166 18.1567 17.3348C18.1566 17.553 18.0698 17.7622 17.9155 17.9165C17.7611 18.0707 17.5518 18.1573 17.3336 18.1572C17.1154 18.1572 16.9062 18.0704 16.752 17.9161L12.3637 13.5278C11.0519 14.5439 9.4023 15.022 7.75047 14.865C6.09864 14.7079 4.56868 13.9275 3.47182 12.6825C2.37497 11.4375 1.79362 9.82133 1.84603 8.16288C1.89845 6.50443 2.58069 4.92824 3.75398 3.75496C4.92726 2.58167 6.50345 1.89942 8.1619 1.84701C9.82035 1.79459 11.4365 2.37595 12.6815 3.4728C13.9265 4.56965 14.707 6.09962 14.864 7.75145C15.021 9.40327 14.5429 11.0529 13.5268 12.3647M8.36863 13.2627C9.66659 13.2627 10.9114 12.7471 11.8292 11.8293C12.747 10.9115 13.2626 9.66675 13.2626 8.36879C13.2626 7.07084 12.747 5.82605 11.8292 4.90826C10.9114 3.99046 9.66659 3.47485 8.36863 3.47485C7.07068 3.47485 5.82589 3.99046 4.9081 4.90826C3.9903 5.82605 3.47469 7.07084 3.47469 8.36879C3.47469 9.66675 3.9903 10.9115 4.9081 11.8293C5.82589 12.7471 7.07068 13.2627 8.36863 13.2627Z" fill="#F15429"></path>
+                                          </svg>
+                                      </span>
+                                  </a>
+                              </li>
+                              <li>
+  
+                          </li></ul>
+                      </div>
+                  </div>
+                  
+              </div>
+          </nav>
+      </div>
+
+      <div class="mobile-nav">
+          <nav class="navbar navbar-dark">
+            <div class="container-fluid">
+              <button
+              class="navbar-toggler"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasDarkNavbar"
+              aria-controls="offcanvasDarkNavbar"
+              aria-label="Toggle navigation"
+            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="16" viewBox="0 0 22 16" fill="none">
+              <g clip-path="url(#clip0_180_2609)">
+                <path d="M0 16H22V13.3333H0V16ZM0 9.33333H22V6.66667H0V9.33333ZM0 0V2.66667H22V0H0Z" fill="#F15429"/>
+              </g>
+              <defs>
+                <clipPath id="clip0_180_2609">
+                  <rect width="22" height="16" fill="white"/>
+                </clipPath>
+              </defs>
+            </svg>
+            </button>
+              <a class="navbar-brand col-md-2" href="#">
+                  <img src="images/Mobile-logo.png" alt="unlock Startup">
+              </a>
+         
+              <div class="col-right">
+                  <ul class="navbar-nav align-items-center">
+                      <li class="nav-item">
+                          <a class="nav-link" href="#">
+                              <span>Business</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                  <path d="M4 21C3.45 21 2.97933 20.8043 2.588 20.413C2.19667 20.0217 2.00067 19.5507 2 19V8C2 7.45 2.196 6.97933 2.588 6.588C2.98 6.19667 3.45067 6.00067 4 6H8V4C8 3.45 8.196 2.97933 8.588 2.588C8.98 2.19667 9.45067 2.00067 10 2H14C14.55 2 15.021 2.196 15.413 2.588C15.805 2.98 16.0007 3.45067 16 4V6H20C20.55 6 21.021 6.196 21.413 6.588C21.805 6.98 22.0007 7.45067 22 8V19C22 19.55 21.8043 20.021 21.413 20.413C21.0217 20.805 20.5507 21.0007 20 21H4ZM10 6H14V4H10V6ZM20 15H15V17H9V15H4V19H20V15ZM11 15H13V13H11V15ZM4 13H9V11H15V13H20V8H4V13Z" fill="#F15429" fill-opacity="0.8"></path>
+                              </svg></a>
+                      </li>
+                      <li class="nav-item">
+                         
+                          <a type="button" class="nav-link" data-bs-toggle="modal" data-bs-target="#myModal" href="#">
+                              <span>Login</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                  <path d="M12 20C14.1217 20 16.1566 19.1571 17.6569 17.6569C19.1571 16.1566 20 14.1217 20 12C20 9.87827 19.1571 7.84344 17.6569 6.34315C16.1566 4.84285 14.1217 4 12 4" stroke="white" stroke-width="1.5" stroke-linecap="round"></path>
+                                  <path d="M4 12H14M14 12L11 9M14 12L11 15" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                              </svg>
+
+                          </a>
+                      </li>
+                     
+                      <li>
+
+                  </li></ul>
+              </div>
+            
+              <div
+                class="offcanvas offcanvas-end text-bg-dark"
+                tabindex="-1"
+                id="offcanvasDarkNavbar"
+                aria-labelledby="offcanvasDarkNavbarLabel"
+              >
+                <div class="offcanvas-header">
+                  <h5 class="offcanvas-title" id="offcanvasDarkNavbarLabel">
+                  
+                    <img src="images/Logo.png"  alt="unlock Startup">
+                  </h5>
+                  <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="offcanvas"
+                    aria-label="Close"
+                  ></button>
+                </div>
+                <div class="offcanvas-body">
+                  <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+                          <li class="nav-item">
+                              <a class="nav-link" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="23"
+                                      height="23" viewBox="0 0 23 23" fill="none">
+                                      <path
+                                          d="M9.07926 15.3336L17.8777 18.4807C18.0255 18.5338 18.1834 18.5533 18.3397 18.5376C18.4959 18.5219 18.6467 18.4714 18.781 18.3899C18.9153 18.3085 19.0297 18.198 19.1158 18.0666C19.202 17.9353 19.2576 17.7863 19.2788 17.6307L21.0738 4.0626C21.183 3.23651 20.3272 2.62031 19.572 2.97968L2.51467 11.1217C1.67134 11.5242 1.73459 12.7413 2.61626 13.0546L4.95459 13.8865L6.22917 14.334M12.4583 16.5411L10.5513 19.7285C9.92834 20.5028 8.67388 20.0648 8.67388 19.0739V16.5219C8.67391 16.0403 8.85524 15.5764 9.1818 15.2224L12.8915 11.1974"
+                                          stroke="black" stroke-opacity="0.6" stroke-width="1.5"
+                                          stroke-linecap="round" stroke-linejoin="round" />
+                                  </svg>
+                                  <span>Startup <br>Challenges</span></a>
+                          </li>
+                          <li class="nav-item">
+                              <a class="nav-link" href="#">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"
+                                  fill="none">
+                                  <g clip-path="url(#clip0_1_509)">
+                                      <path
+                                          d="M16.5 3.66667V0M6.41666 16.5H4.58332M17.4167 16.5H8.24999M6.41666 12.8333H4.58332M17.4167 12.8333H8.24999M5.49999 3.66667V0M0.916656 8.25H21.0833M0.916656 21.0833H21.0833V3.66667H0.916656V21.0833Z"
+                                          stroke="black" stroke-opacity="0.6" stroke-width="1.5" />
+                                  </g>
+                                  <defs>
+                                      <clipPath id="clip0_1_509">
+                                          <rect width="22" height="22" fill="white" />
+                                      </clipPath>
+                                  </defs>
+                              </svg>
+                                 <span>Events</span>
+                              </a>
+                          </li>
+                          <li class="nav-item">
+                              <a class="nav-link" href="#">
+                                  <img src="images/iconoir_presentation.png" alt="iconoir presentation">
+                                 
+                                  <span>Pitch Desk</span>
+                              </a>
+                          </li>
+                          <li class="nav-item">
+                              <a class="nav-link" href="#">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                      fill="none">
+                                      <path
+                                          d="M17.999 3C18.1168 2.99991 18.2329 3.02757 18.3381 3.08074C18.4432 3.1339 18.5343 3.21107 18.604 3.306L18.659 3.393L21.922 9.421L21.96 9.514L21.972 9.554L21.992 9.656L21.998 9.75C21.9975 9.81754 21.9884 9.88474 21.971 9.95L21.924 10.075L21.886 10.144C21.8632 10.1796 21.8381 10.2136 21.811 10.246L21.871 10.168L21.846 10.203L12.596 20.708C12.5201 20.811 12.4173 20.8913 12.299 20.94L12.201 20.973L12.123 20.99L12 21L11.9 20.994L11.782 20.968C11.7208 20.9507 11.6623 20.9251 11.608 20.892L11.599 20.885C11.5517 20.8556 11.508 20.8207 11.469 20.781L2.179 10.235L2.153 10.203L2.113 10.144C2.05648 10.0524 2.02033 9.94978 2.007 9.843L2 9.75L2.003 9.684L2.016 9.595L2.04 9.509L2.062 9.45L2.09 9.393L5.34 3.393C5.39603 3.28946 5.47565 3.20056 5.57242 3.1335C5.66918 3.06644 5.78038 3.02311 5.897 3.007L5.999 3H17.999ZM14.997 10.5H8.998L11.998 18.187L14.997 10.5ZM7.389 10.5H4.409L9.76 16.574L7.389 10.5ZM19.587 10.5H16.608L14.24 16.57L19.587 10.5ZM8.971 4.5H6.445L4.007 9H7.531L8.971 4.5ZM13.451 4.5H10.546L9.105 9H14.89L13.451 4.5ZM17.551 4.5H15.026L16.466 9H19.988L17.551 4.5Z"
+                                          fill="black" fill-opacity="0.6" />
+                                  </svg>
+                                  <span>Premium <br>Challenges</span>
+                              </a>
+                          </li>
+                          <li>
+                          <li class="nav-item">
+                              <a class="nav-link" href="#">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"
+                                      fill="none">
+                                      <g clip-path="url(#clip0_1_495)">
+                                          <path
+                                              d="M2.93333 18.3333V19.0667H4.4V18.3333H2.93333ZM10.2667 18.3333V19.0667H11.7333V18.3333H10.2667ZM4.4 18.3333V17.6H2.93333V18.3333H4.4ZM10.2667 17.6V18.3333H11.7333V17.6H10.2667ZM7.33333 14.6667C8.1113 14.6667 8.85741 14.9757 9.40751 15.5258C9.95762 16.0759 10.2667 16.822 10.2667 17.6H11.7333C11.7333 16.433 11.2698 15.3139 10.4446 14.4887C9.61944 13.6636 8.50029 13.2 7.33333 13.2V14.6667ZM4.4 17.6C4.4 16.822 4.70905 16.0759 5.25915 15.5258C5.80926 14.9757 6.55537 14.6667 7.33333 14.6667V13.2C6.16638 13.2 5.04722 13.6636 4.22206 14.4887C3.3969 15.3139 2.93333 16.433 2.93333 17.6H4.4ZM7.33333 5.86667C6.55537 5.86667 5.80926 6.17571 5.25915 6.72582C4.70905 7.27593 4.4 8.02203 4.4 8.8H5.86667C5.86667 8.41102 6.02119 8.03796 6.29624 7.76291C6.5713 7.48786 6.94435 7.33333 7.33333 7.33333V5.86667ZM10.2667 8.8C10.2667 8.02203 9.95762 7.27593 9.40751 6.72582C8.85741 6.17571 8.1113 5.86667 7.33333 5.86667V7.33333C7.72232 7.33333 8.09537 7.48786 8.37042 7.76291C8.64548 8.03796 8.8 8.41102 8.8 8.8H10.2667ZM7.33333 11.7333C8.1113 11.7333 8.85741 11.4243 9.40751 10.8742C9.95762 10.3241 10.2667 9.57797 10.2667 8.8H8.8C8.8 9.18898 8.64548 9.56204 8.37042 9.83709C8.09537 10.1121 7.72232 10.2667 7.33333 10.2667V11.7333ZM7.33333 10.2667C6.94435 10.2667 6.5713 10.1121 6.29624 9.83709C6.02119 9.56204 5.86667 9.18898 5.86667 8.8H4.4C4.4 9.57797 4.70905 10.3241 5.25915 10.8742C5.80926 11.4243 6.55537 11.7333 7.33333 11.7333V10.2667ZM2.2 4.4H19.8V2.93333H2.2V4.4ZM20.5333 5.13333V16.8667H22V5.13333H20.5333ZM19.8 17.6H2.2V19.0667H19.8V17.6ZM1.46667 16.8667V5.13333H0V16.8667H1.46667ZM2.2 17.6C2.00551 17.6 1.81898 17.5227 1.68146 17.3852C1.54393 17.2477 1.46667 17.0612 1.46667 16.8667H0C0 17.4501 0.231785 18.0097 0.644365 18.4223C1.05695 18.8349 1.61652 19.0667 2.2 19.0667V17.6ZM20.5333 16.8667C20.5333 17.0612 20.4561 17.2477 20.3185 17.3852C20.181 17.5227 19.9945 17.6 19.8 17.6V19.0667C20.3835 19.0667 20.9431 18.8349 21.3556 18.4223C21.7682 18.0097 22 17.4501 22 16.8667H20.5333ZM19.8 4.4C19.9945 4.4 20.181 4.47726 20.3185 4.61479C20.4561 4.75232 20.5333 4.93884 20.5333 5.13333H22C22 4.54986 21.7682 3.99028 21.3556 3.5777C20.9431 3.16512 20.3835 2.93333 19.8 2.93333V4.4ZM2.2 2.93333C1.61652 2.93333 1.05695 3.16512 0.644365 3.5777C0.231785 3.99028 0 4.54986 0 5.13333H1.46667C1.46667 4.93884 1.54393 4.75232 1.68146 4.61479C1.81898 4.47726 2.00551 4.4 2.2 4.4V2.93333ZM13.2 8.8H17.6V7.33333H13.2V8.8ZM13.2 13.2H17.6V11.7333H13.2V13.2ZM0 22H22V20.5333H0V22ZM4.4 0V3.66667H5.86667V0H4.4ZM16.1333 0V3.66667H17.6V0H16.1333Z"
+                                              fill="black" fill-opacity="0.6" />
+                                      </g>
+                                      <defs>
+                                          <clipPath id="clip0_1_495">
+                                              <rect width="22" height="22" fill="white" />
+                                          </clipPath>
+                                      </defs>
+                                  </svg>
+                                  <span>Contact Us</span>
+                              </a>
+                          </li>
+                      
+                  </ul>
+                </div>
+               
+              </div>
+            </div>
+          </nav>
+        </div>
+  </header>
+
+    <div class="challenge-detail-wrapper pitch-deck-wapper">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-12">
+            <h2>Pitch Title Here Pitch Title Here</h2>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-8">
+            <div class="col-left">
+            <div class="main-baner">
+              <div class="pitch-deck-banner">
+              
+                <div id="demo" class="carousel slide" data-bs-ride="carousel">
+                
+                  <div class="carousel-inner">
+                    <div class="carousel-item active">
+                      <div class="row align-items-center">
+                        <div class="col-lg-6">
+                          <img src="images/Image-Short-Description.png" alt="">
+                          <h6>Image Short Description</h6>
+                        </div>
+                        <div class="col-lg-6">
+                          <div class="content">
+                            <h5>Introduction</h5>
+                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="carousel-item">
+                      <div class="row align-items-center">
+                      
+                        <div class="col-lg-6">
+                          <div class="content">
+                            <h5>What We Do!</h5>
+                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.</p>
+                          </div>
+                          </div>
+                          <div class="col-lg-6">
+                            <img src="images/Image-Short-Description.png" alt="">
+                           
+                          </div>
+                        
+                      </div>
+                    </div>
+                    <div class="carousel-item">
+                      <div class="row align-items-center">
+                        <div class="col-lg-6">
+                          <div class="content">
+                            <h5>How We Started?</h5>
+                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.</p>
+                           </div>
+                        </div>
+                        <div class="col-lg-6">
+                          <img src="images/Image-Short-Description.png" alt="">
+                          <h6>Image Short Description</h6>
+                        </div>
+                       
+                      </div>
+                    </div>
+                  </div>
+                  <button class="carousel-control-prev" type="button" data-bs-target="#demo" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                  </button>
+                  <button class="carousel-control-next" type="button" data-bs-target="#demo" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                  </button>
+                </div>
+                
+                
+                              </div>
+                             <div class="bottom-nav">
+                              <h6><span>1</span>/3</h6>
+                              </div>
+            </div>
+              <div class="pitch-deck-content">
+                  <p>Short Description- Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                
+                
+              
+               
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="company-details">
+              <div class="row">
+                <div class="col-8">
+                  <span>Price</span>
+                </div>
+                <div class="col-4">
+                  <h4>₹ 999</h4>
+                </div>
+              </div>
+              <h6>Industrry</h6>
+              <ul class="list">
+                <li>EduTech</li>
+              </ul>
+              <h6>Applicable For</h6>
+              <ul class="list">
+                <li>Individual</li>
+                <span>|</span>
+                <li>Company</li>
+              </ul>
+              <h6>Document Type</h6>
+              <ul class="list">
+                <li><a href="#"><img src="images/PPT.png" alt="PPT">PPT</a></li>
+                <li><a href="#"><img src="images/PDF.png" alt="PPT">PDF</a></li>
+              </ul>
+              <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#myModal2">Purchase Now</button>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer class="footer-wrapper">
+      <div class="container-fluid">
+          <div class="row">
+              <div class="col-md-4">
+                  <div class="column col-one">
+                      <div class="Footer-logo">
+                          <a href="#">
+                              <img src="images/Logo.png" alt="">
+                          </a>
+                      </div>
+                      <p>An amazing design specifically for startup, app, business, SaaS and IT services.</p>
+                  </div>
+              </div>
+              <div class="col-md-4">
+                  <div class="column col-two">
+                      <div class="row">
+                          <div class="col-6">
+                              <ul>
+                                  <li><a href="#">COMPANY</a>
+                                  <ul>
+                                      <li><a href="#">About</a></li>
+                                      <li><a href="#">Contact Us</a></li>
+                                      <li><a href="#">Terms & Conditions</a></li>
+                                      <li><a href="#">Privacy Policy</a></li>
+                                  </ul>
+                              </li>
+                              </ul>
+                          </div>
+                          <div class="col-6">
+                              <ul>
+                                  <li><a href="#">SERVICES</a>
+                                  <ul>
+                                      <li><a href="#">Startup Challenge</a></li>
+                                      <li><a href="#">Startup Event</a></li>
+                                      <li><a href="#">Pitch Desk</a></li>
+                                      <li><a href="#">Premium Challenge</a></li>
+                                  </ul>
+                              </li>
+                              </ul>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              <div class="col-md-4">
+                  <div class="column col-three">
+                      <div class="row">
+                          <div class="col-6">
+                              <ul>
+                                  <li><a href="#">FOR VENTURE</a>
+                                  <ul>
+                                      <li><a href="#">Enroll Business</a></li>
+                                      <li><a href="#">Post Challenge</a></li>
+                                      <li><a href="#">Organize Event</a></li>
+                                  </ul>
+                              </li>
+                              </ul>
+                          </div>
+                          <div class="col-6">
+                            
+                                  <div class="socila-media">
+                                      <h5>SOCIAL ACCOUNTS</h5>
+                                  <ul>
+                                      <li><a href="#">
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                              <g clip-path="url(#clip0_1_820)">
+                                                <path d="M18.6746 0.571167H1.32542C0.908188 0.571167 0.571106 0.908249 0.571106 1.32548V18.6746C0.571106 19.0918 0.908188 19.4289 1.32542 19.4289H18.6746C19.0918 19.4289 19.4289 19.0918 19.4289 18.6746V1.32548C19.4289 0.908249 19.0918 0.571167 18.6746 0.571167ZM16.4965 6.07528H14.9902C13.8093 6.07528 13.5806 6.63629 13.5806 7.46132V9.27874H16.3998L16.0321 12.1239H13.5806V19.4289H10.6411V12.1263H8.18257V9.27874H10.6411V7.18081C10.6411 4.7458 12.1286 3.41869 14.3019 3.41869C15.3438 3.41869 16.2372 3.49648 16.4988 3.53184V6.07528H16.4965Z" fill="white" fill-opacity="0.6"/>
+                                              </g>
+                                              <defs>
+                                                <clipPath id="clip0_1_820">
+                                                  <rect width="20" height="20" fill="white"/>
+                                                </clipPath>
+                                              </defs>
+                                            </svg>
+                                      </a></li>
+                                      <li><a href="#">
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="19" viewBox="0 0 18 19" fill="none">
+                                              <g clip-path="url(#clip0_1_822)">
+                                                <path d="M16.0714 0.571289H1.92857C0.863839 0.571289 0 1.42824 0 2.48448V16.5146C0 17.5708 0.863839 18.4278 1.92857 18.4278H16.0714C17.1362 18.4278 18 17.5708 18 16.5146V2.48448C18 1.42824 17.1362 0.571289 16.0714 0.571289ZM14.1067 6.90077C14.1147 7.01238 14.1147 7.12797 14.1147 7.23957C14.1147 10.6953 11.4629 14.6771 6.61741 14.6771C5.12277 14.6771 3.73661 14.2466 2.57143 13.5053C2.78437 13.5292 2.98929 13.5372 3.20625 13.5372C4.43973 13.5372 5.57277 13.1226 6.47679 12.4211C5.31964 12.3972 4.34732 11.6439 4.01384 10.6076C4.41964 10.6674 4.78527 10.6674 5.20312 10.5598C3.99777 10.3166 3.09375 9.26437 3.09375 7.99289V7.961C3.4433 8.15631 3.85312 8.27588 4.28304 8.29183C3.9216 8.05333 3.62531 7.72977 3.42059 7.35004C3.21588 6.9703 3.10911 6.5462 3.10982 6.11557C3.10982 5.6293 3.23839 5.18288 3.46741 4.79626C4.76518 6.38262 6.71384 7.41893 8.89955 7.53053C8.52589 5.75684 9.86384 4.31796 11.471 4.31796C12.2304 4.31796 12.9134 4.63284 13.3955 5.14303C13.9902 5.03142 14.5607 4.8122 15.067 4.51327C14.8701 5.11911 14.4563 5.6293 13.9098 5.95215C14.4402 5.89635 14.9545 5.74887 15.4286 5.54559C15.071 6.06774 14.621 6.53009 14.1067 6.90077Z" fill="white" fill-opacity="0.6"/>
+                                              </g>
+                                              <defs>
+                                                <clipPath id="clip0_1_822">
+                                                  <rect width="18" height="19" fill="white"/>
+                                                </clipPath>
+                                              </defs>
+                                            </svg>
+                                      </a></li>
+                                      <li><a href="#">
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                              <path d="M10 6.66699C9.11597 6.66699 8.26812 7.01818 7.643 7.6433C7.01788 8.26842 6.66669 9.11627 6.66669 10.0003C6.66669 10.8844 7.01788 11.7322 7.643 12.3573C8.26812 12.9825 9.11597 13.3337 10 13.3337C10.8841 13.3337 11.7319 12.9825 12.357 12.3573C12.9822 11.7322 13.3334 10.8844 13.3334 10.0003C13.3334 9.11627 12.9822 8.26842 12.357 7.6433C11.7319 7.01818 10.8841 6.66699 10 6.66699Z" fill="white" fill-opacity="0.6"/>
+                                              <path fill-rule="evenodd" clip-rule="evenodd" d="M4.94259 1.39006C8.30392 1.01809 11.6961 1.01809 15.0575 1.39006C16.8938 1.59472 18.3743 3.03799 18.5899 4.87803C18.9885 8.28072 18.9885 11.7182 18.5899 15.1209C18.3743 16.9609 16.8938 18.4042 15.0584 18.6098C11.6968 18.9819 8.30424 18.9819 4.94259 18.6098C3.10624 18.4042 1.62576 16.9609 1.41012 15.1218C1.01145 11.7188 1.01145 8.28104 1.41012 4.87803C1.62576 3.03799 3.10624 1.59472 4.94259 1.39006ZM14.8351 4.20708C14.5786 4.20708 14.3326 4.30879 14.1513 4.48984C13.9699 4.67089 13.868 4.91644 13.868 5.17248C13.868 5.42852 13.9699 5.67407 14.1513 5.85511C14.3326 6.03616 14.5786 6.13787 14.8351 6.13787C15.0915 6.13787 15.3375 6.03616 15.5188 5.85511C15.7002 5.67407 15.8021 5.42852 15.8021 5.17248C15.8021 4.91644 15.7002 4.67089 15.5188 4.48984C15.3375 4.30879 15.0915 4.20708 14.8351 4.20708ZM5.40675 9.99945C5.40675 8.78327 5.89068 7.6169 6.75209 6.75692C7.6135 5.89695 8.78181 5.41383 10 5.41383C11.2182 5.41383 12.3866 5.89695 13.248 6.75692C14.1094 7.6169 14.5933 8.78327 14.5933 9.99945C14.5933 11.2156 14.1094 12.382 13.248 13.242C12.3866 14.102 11.2182 14.5851 10 14.5851C8.78181 14.5851 7.6135 14.102 6.75209 13.242C5.89068 12.382 5.40675 11.2156 5.40675 9.99945Z" fill="white" fill-opacity="0.6"/>
+                                            </svg>
+                                      </a></li>
+                                      <li><a href="#">
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 19 19" fill="none">
+                                              <g clip-path="url(#clip0_1_827)">
+                                                <path d="M0 1.36088C0 0.609187 0.624625 0 1.39531 0H17.6047C18.3754 0 19 0.609187 19 1.36088V17.6391C19 18.3908 18.3754 19 17.6047 19H1.39531C0.624625 19 0 18.3908 0 17.6391V1.36088ZM5.86981 15.9054V7.32569H3.01863V15.9054H5.86981ZM4.44481 6.15363C5.43875 6.15363 6.05744 5.49575 6.05744 4.67163C6.03962 3.82969 5.43994 3.18963 4.46381 3.18963C3.48769 3.18963 2.85 3.83087 2.85 4.67163C2.85 5.49575 3.46869 6.15363 4.42581 6.15363H4.44481ZM10.2731 15.9054V11.1138C10.2731 10.8573 10.2921 10.6008 10.3681 10.4179C10.5735 9.90613 11.0426 9.37531 11.8311 9.37531C12.863 9.37531 13.2751 10.1614 13.2751 11.3157V15.9054H16.1262V10.9844C16.1262 8.34812 14.7203 7.12263 12.844 7.12263C11.3311 7.12263 10.6531 7.95388 10.2731 8.53931V8.569H10.2541L10.2731 8.53931V7.32569H7.42306C7.45869 8.13081 7.42306 15.9054 7.42306 15.9054H10.2731Z" fill="white" fill-opacity="0.6"/>
+                                              </g>
+                                              <defs>
+                                                <clipPath id="clip0_1_827">
+                                                  <rect width="19" height="19" fill="white"/>
+                                                </clipPath>
+                                              </defs>
+                                            </svg>
+                                      </a></li>
+                                  </ul>
+                                  </div>
+                            
+                              
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <div class="copyright">
+          <div class="container-fluid">
+              <div class="row">
+                  <p>Copyright @unlockstartup 2024</p>
+              </div>
+          </div>
+      </div>
+  </footer>
+  <div class="modal" id="myModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-body">
+            <div class="col-6 px-2">
+                <div class="login-wrapper">
+                    <div class="logo">
+                        <img src="images/Login-logo.png" alt="unlock Startup">
+                    </div>
+                    <div class="login-image">
+                        <img src="images/Login.png" alt="Login">
+                    </div>
+                </div>   
+            </div>
+            <div class="col-6 px-2">
+                <div class="form-wrap">
+                    <h4>LOG IN</h4>
+    
+                    <form>
+                        <div class="form-group mb-4">
+                          <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email">
+                        </div>
+                        <div class="form-group mb-2">
+                          <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
+                        </div>
+                        <div class="form-check">
+                          <div class="checkbox">
+                            <input type="checkbox" class="form-check-input" id="exampleCheck1">
+                          <label class="form-check-label" for="exampleCheck1">Remember me</label>
+                          </div>
+                          <a href="#">Forgot password?</a>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Log In</button>
+                        <div class="gogole-login-wrap">
+                            <button type="submit" class="btn btn-primary">
+                                 <img src="images/goggle-icon.png" alt="">
+                                 <span class="goggle-text">Login With Google</span>
+                                </button>
+                           
+                            
+                        </div>
+    
+                        <div class="bottom-text">
+                            <span>New To Unlock Startup?</span>
+                            <a  class="nav-link" data-bs-toggle="modal" data-bs-target="#myModal1" href="#">Register</a>
+                        </div>
+                      </form>
+                </div>
+            </div>
+        </div>
+  
+      
+  
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="myModal1">
+
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-body">
+            <div class="col-6 px-2">
+                <div class="Register-wrapper">
+                    <div class="logo">
+                        <img src="images/Login-logo.png" alt="unlock Startup">
+                    </div>
+                    <div class="login-image">
+                      <img src="images/Register-img.png" alt="Register">
+                        <h6>*Only For Individuals & Company*</h6>
+                    </div>
+                </div>   
+                
+            </div>
+            <div class="col-6 px-2">
+                <div class="form-wrap">
+                    <h4>REGISTER</h4>
+                    <span>Register as</span>
+                    <div class="form">
+                        
+                        <ul class="tab-group">
+                          <li class="tab active"><a href="Register">Individual</a></li>
+                          <li class="tab"><a href="login">Company</a></li>
+                        </ul>
+                      
+                        <div class="tab-content">
+                          <div class="Register">
+                            
+                      
+                            <form>
+                                <div class="form-group">
+                                    <input type="name" class="form-control" id="name" aria-describedby="name" placeholder="Name">
+                                  </div>
+                                <div class="form-group">
+                                  <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="E-mail">
+                                </div>
+                                <div class="form-group">
+                                  <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
+                                </div>
+                                <div class="form-group">
+                                    <input type="password" class="form-control" id="exampleInputPassword2" placeholder="Confirm Password">
+                                  </div>
+                                <div class="form-check">
+                                  <div class="checkbox">
+                                    <input type="checkbox" class="form-check-input" id="exampleCheck1">
+                                  <label class="form-check-label" for="exampleCheck1">I agree to the terms of service</label>
+                                  </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Register</button>
+                                <div class="gogole-login-wrap">
+                                    <button type="submit" class="btn btn-primary">
+                                         <img src="images/goggle-icon.png" alt="">
+                                         <span class="goggle-text">Signup With Google</span>
+                                        </button>
+                                   
+                                    
+                                </div>
+            
+                                <div class="bottom-text">
+                                    <span>Already a Member?</span>
+                                    <a class="nav-link" data-bs-toggle="modal" data-bs-target="#myModal" href="#">Login</a>
+                                </div>
+                              </form>
+                          </div>
+                      
+                          <div class="login">
+                            
+                      
+                            <form>
+                                <div class="form-group">
+                                  <input type="text" class="form-control" id="companyname" aria-describedby="companyname" placeholder="Company Name">
+                                </div>
+                                <div class="form-group">
+                                    <input type="email" class="form-control" id="email" aria-describedby="email" placeholder="Company E-mail">
+                                  </div>
+                               
+                                <div class="form-group two-col-input">
+                                <select name="cars" id="cars">
+                                    <option value="volvo">Category</option>
+                                    <option value="saab">Category</option>
+                                    <option value="mercedes">Category</option>
+                                    <option value="audi">Category</option>
+                                  </select>
+                                  <input type="calculater" class="form-control" id="Since" aria-describedby="Since" placeholder="Since">
+                                 
+                                  </div>
+                                  <div class="form-group">
+                                    <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Create Password">
+                                  </div>
+                                <div class="form-group">
+                                    <input type="password" class="form-control" id="exampleInputPassword2" placeholder="Confirm Password">
+                                  </div>
+                                <div class="form-check">
+                                  <div class="checkbox">
+                                    <input type="checkbox" class="form-check-input" id="exampleCheck1">
+                                  <label class="form-check-label" for="exampleCheck1">I agree to the terms of service</label>
+                                  </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Register</button>
+                              
+            
+                                <div class="bottom-text">
+                                    <span>Already a Member?</span>
+                                    <a class="nav-link" data-bs-toggle="modal" data-bs-target="#myModal" href="#">Login</a>
+                                </div>
+                              </form>
+                      
+                          </div>
+                      
+                        </div>
+                      
+                      </div> 
+                </div>
+            </div>
+        </div>
+  
+      
+  
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal" id="myModal2">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="colse-btn">
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <div class="col-6 px-2">
+                <div class="login-wrapper">
+                    <div class="logo">
+                        <img src="images/Login-logo.png" alt="unlock Startup">
+                    </div>
+                    <div class="login-image">
+                        <img src="images/Unlock-Event.png" alt="Login">
+                    </div>
+                </div>   
+            </div>
+            <div class="col-6 px-2">
+                <div class="form-wrap">
+                    <h4>Unlock Event</h4>
+    
+                    <form>
+                        <div class="form-group mb-4">
+                          <input type="name" class="form-control" id="name" aria-describedby="name" placeholder="Name">
+                        </div>
+                        <div class="form-group mb-2">
+                          <input type="email" class="form-control" id="email" placeholder="E-mail">
+                        </div>
+                        <div class="form-group mb-2">
+                          <input type="number" class="form-control" id="panNumber" placeholder="Pan Number">
+                        </div>
+                        <div class="form-group mb-2">
+                          <textarea class="form-control" rows="5" id="comment" placeholder="Address" name="text"></textarea>
+                        </div>
+                        <div class="form-group mb-2">
+                         <label class="attachments">
+                          <input type="file">
+                          <div class="inner-files content">
+                            <img src="images/teenyicons_attachment-outline.svg">
+                          <span>  Add Attachment</span>
+                            
+                          </div>
+                         </label>
+                        </div>
+                        <div class="gogole-login-wrap">
+                            <button type="submit" class="btn btn-primary">Submit
+                                </button>
+                           
+                            
+                        </div>
+     </form>
+                </div>
+            </div>
+        </div>
+  
+      
+  
+      </div>
+    </div>
+  </div>
+  
+  </div>
+  <script src="js/js.js"></script>
+</body>
+
+</html>
