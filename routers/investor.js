@@ -37,8 +37,7 @@ router.patch('/update-pitch-status/:pitchId', InvestorController.updatePitchStat
 router.post("/submit-pitch", upload.fields([
     { name: 'pitch_deck', maxCount: 1 },
     { name: 'product_demo', maxCount: 1 },
-    { name: 'supporting_documents', maxCount: 1 },
-    { name: 'use_of_funds', maxCount: 1 }
+    { name: 'supporting_documents', maxCount: 1 }
 ]), InvestorController.submitPitch);
 
 // New route to get investor pitch statistics

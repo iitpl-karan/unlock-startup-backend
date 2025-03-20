@@ -283,12 +283,26 @@ exports.createNewUser = async (req, res) => {
         stage,
         company,
         industerytype,
-        phone,
+        phoneNumber: phone,
         fullName: fullname,
         investoremail: email,
         password: hashedPassword,
         investorname: fullname,
-        terms: req.body.terms || false
+        terms: req.body.terms || false,
+        investorDetails: {
+          name: fullname || '',
+          type: investorType || '',
+          stages: stage || '',
+          fundingTypes: '',
+          expertise: ''
+        },
+        companyDetails: {
+          fullName: company || '',
+          designation: '',
+          email: email || '',
+          linkedIn: website || '',
+          companyLogo: '/assets/images/company-logo-default.png'
+        }
       });
 
       const savedInvestorDetails = await investorDetails.save();

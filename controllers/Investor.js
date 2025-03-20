@@ -160,7 +160,17 @@ exports.deleteInvestorType = async (req, res) => {
 
 exports.createNewInvestorUser = async (req, res) => {
     try {
-        const { investorname,  investoremail, password , industerytype } = req.body;
+        const { 
+            investorname,  
+            investoremail, 
+            password, 
+            industerytype,
+            company,
+            website,
+            phoneNumber,
+            companyDetails,
+            investorDetails
+        } = req.body;
 
         // Check if user with the same companyemail already exists
         const userAlreadyExist = await InvestorUser.findOne({ investoremail });
@@ -172,19 +182,65 @@ exports.createNewInvestorUser = async (req, res) => {
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create new user document
+        // Parse company and investor details if provided
+        let parsedCompanyDetails = {};
+        let parsedInvestorDetails = {};
+
+        try {
+            if (companyDetails) {
+                parsedCompanyDetails = typeof companyDetails === 'string' 
+                    ? JSON.parse(companyDetails) 
+                    : companyDetails;
+            }
+            if (investorDetails) {
+                parsedInvestorDetails = typeof investorDetails === 'string' 
+                    ? JSON.parse(investorDetails) 
+                    : investorDetails;
+            }
+        } catch (parseError) {
+            console.error("Error parsing details:", parseError);
+            return res.status(400).json({ 
+                message: "Invalid details format" 
+            });
+        }
+
+        // Create new user document with all details
         const newUser = new InvestorUser({
             investorname,
             investoremail,
             password: hashedPassword,
-            industerytype
+            industerytype,
+            company,
+            website,
+            phoneNumber,
+            companyDetails: {
+                fullName: parsedCompanyDetails.fullName || '',
+                designation: parsedCompanyDetails.designation || '',
+                email: parsedCompanyDetails.email || '',
+                linkedIn: parsedCompanyDetails.linkedIn || '',
+                companyLogo: parsedCompanyDetails.companyLogo || '/assets/images/company-logo-default.png'
+            },
+            investorDetails: {
+                name: parsedInvestorDetails.name || '',
+                type: parsedInvestorDetails.type || '',
+                stages: parsedInvestorDetails.stages || '',
+                fundingTypes: parsedInvestorDetails.fundingTypes || '',
+                expertise: parsedInvestorDetails.expertise || ''
+            }
         });
 
         // Save the new user to the database
         const savedUser = await newUser.save();
 
         if (savedUser) {
-            return res.status(200).json({ message: "Investor has been saved successfully" });
+            return res.status(200).json({ 
+                message: "Investor has been saved successfully",
+                data: {
+                    id: savedUser._id,
+                    email: savedUser.investoremail,
+                    name: savedUser.investorname
+                }
+            });
         } else {
             return res.status(500).json({ message: "Unable to add new Investor in users collection" });
         }
@@ -250,8 +306,22 @@ exports.updateInvestorProfile = async (req, res) => {
         const {
             investoremail,
             investorName,
-            netWorth
+            netWorth,
+            phoneNumber,
+            isPhonePublic,
+            isEmailPublic,
+            website
         } = req.body;
+
+        console.log("Extracted data:", {
+            investoremail,
+            investorName,
+            netWorth,
+            phoneNumber,
+            isPhonePublic,
+            isEmailPublic,
+            website
+        });
 
         // Parse JSON strings back to objects
         let companyDetails = {};
@@ -261,9 +331,13 @@ exports.updateInvestorProfile = async (req, res) => {
         try {
             if (req.body.companyDetails) {
                 companyDetails = JSON.parse(req.body.companyDetails);
+                console.log("Parsed companyDetails:", companyDetails);
             }
             if (req.body.investorDetails) {
                 investorDetails = JSON.parse(req.body.investorDetails);
+                console.log("Parsed investorDetails:", investorDetails);
+                console.log("Investor type:", investorDetails.type);
+                console.log("Investor stages:", investorDetails.stages);
             }
             if (req.body.aboutUs) {
                 aboutUs = JSON.parse(req.body.aboutUs);
@@ -316,6 +390,16 @@ exports.updateInvestorProfile = async (req, res) => {
         const updateData = {
             investorname: investorName,
             netWorth,
+            phoneNumber: phoneNumber || investor.phoneNumber,
+            isPhonePublic: isPhonePublic !== undefined ? isPhonePublic : investor.isPhonePublic,
+            isEmailPublic: isEmailPublic !== undefined ? isEmailPublic : investor.isEmailPublic,
+            website: website || investor.website,
+            // Also update the company field with the company name from companyDetails
+            company: companyDetails.fullName || investor.company,
+            // Also update the investorType field with the type from investorDetails  
+            investorType: investorDetails.type || investor.investorType,
+            // Also update the stage field with the stages from investorDetails
+            stage: investorDetails.stages || investor.stage,
             companyDetails: {
                 fullName: companyDetails.fullName,
                 designation: companyDetails.designation,
@@ -456,7 +540,8 @@ exports.submitPitch = async (req, res) => {
       problem_solving,
       solution_overview,
       product_description,
-      fundraising_requirements
+      fundraising_requirements,
+      use_of_funds
     } = req.body;
 
     // Validate required fields
@@ -506,7 +591,6 @@ exports.submitPitch = async (req, res) => {
     const pitchDeckFile = req.files?.['pitch_deck']?.[0]?.path;
     const productDemoFile = req.files?.['product_demo']?.[0]?.path;
     const supportingDocumentsFile = req.files?.['supporting_documents']?.[0]?.path;
-    const useOfFundsFile = req.files?.['use_of_funds']?.[0]?.path;
 
     // Find the investor
     const investor = await InvestorUser.findById(investorId);
@@ -525,7 +609,7 @@ exports.submitPitch = async (req, res) => {
       pitchDeck: pitchDeckFile,
       product_demo: productDemoFile,
       supporting_documents: supportingDocumentsFile,
-      use_of_funds: useOfFundsFile,
+      use_of_funds,
       fundingAmount: parseFloat(fundingAmount),
       equity: parseFloat(equity),
       description,
@@ -556,6 +640,140 @@ exports.submitPitch = async (req, res) => {
       },
       { new: true }
     );
+
+    // Send email notification to the user
+    try {
+      // Create nodemailer transporter
+      let transporter = nodemailer.createTransport({
+        host: "smtp.hostinger.com",
+        port: 587,
+        secure: false,
+        auth: {
+          user: 'info@unlockstartup.com',
+          pass: 'Z2q^Hoj>K4',
+        },
+      });
+
+      // Get today's date formatted as DD/MM/YYYY
+      const today = new Date();
+      const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+      
+      // Format currency with commas
+      const formattedAmount = parseFloat(fundingAmount).toLocaleString('en-IN', {
+        maximumFractionDigits: 0,
+        style: 'currency',
+        currency: 'INR'
+      });
+
+      // Prepare email content
+      const mailOptions = {
+        from: 'info@unlockstartup.com',
+        to: contact_email,
+        subject: 'Your Pitch Has Been Submitted Successfully',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e6e6e6; border-radius: 5px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://unlockstartup.com/unlock/uploads/Logo.png" alt="Unlock Startup Logo" style="max-width: 180px;">
+            </div>
+            
+            <h2 style="color: #333; text-align: center; margin-bottom: 20px;">Pitch Submission Confirmation</h2>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.5;">Dear ${founder_name},</p>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.5;">Thank you for submitting your pitch through Unlock Startup. We're pleased to confirm that your pitch has been successfully received and sent to <strong>${investor.investorname}</strong>.</p>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3 style="color: #333; margin-top: 0;">Pitch Summary</h3>
+              <ul style="color: #555; padding-left: 20px;">
+                <li><strong>Date Submitted:</strong> ${formattedDate}</li>
+                <li><strong>Company Name:</strong> ${company_name}</li>
+                <li><strong>Funding Amount:</strong> ${formattedAmount}</li>
+                <li><strong>Equity Offered:</strong> ${equity}%</li>
+                <li><strong>Status:</strong> Pending Review</li>
+              </ul>
+            </div>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.5;">The investor will review your pitch and may contact you if they're interested in learning more about your business. You will receive another notification when the investor takes action on your pitch.</p>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.5;">In the meantime, you can log in to your account to check the status of your pitch and other investment opportunities.</p>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.5;">If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 30px;">Best regards,<br>The Unlock Startup Team</p>
+            
+            <div style="text-align: center; border-top: 1px solid #e6e6e6; padding-top: 20px; font-size: 14px; color: #777;">
+              <p>© 2024 Unlock Startup. All rights reserved.</p>
+              <p>
+                <a href="mailto:contact@unlockstartup.com" style="color: #555; text-decoration: none;">contact@unlockstartup.com</a> | 
+                <a href="tel:+919266733959" style="color: #555; text-decoration: none;">+91 9266733959</a>
+              </p>
+            </div>
+          </div>
+        `,
+      };
+
+      // Send the email (don't await this to avoid delaying the response)
+      transporter.sendMail(mailOptions).catch(emailError => {
+        console.error('Error sending pitch submission email:', emailError);
+      });
+
+      // Also send notification to the investor
+      const investorMailOptions = {
+        from: 'info@unlockstartup.com',
+        to: investor.investoremail,
+        subject: 'New Pitch Submission - Action Required',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e6e6e6; border-radius: 5px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://unlockstartup.com/unlock/uploads/Logo.png" alt="Unlock Startup Logo" style="max-width: 180px;">
+            </div>
+            
+            <h2 style="color: #333; text-align: center; margin-bottom: 20px;">New Pitch Submission</h2>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.5;">Dear ${investor.investorname},</p>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.5;">You have received a new pitch submission from <strong>${founder_name}</strong> of <strong>${company_name}</strong>.</p>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3 style="color: #333; margin-top: 0;">Pitch Details</h3>
+              <ul style="color: #555; padding-left: 20px;">
+                <li><strong>Date Submitted:</strong> ${formattedDate}</li>
+                <li><strong>Company Name:</strong> ${company_name}</li>
+                <li><strong>Industry:</strong> ${industry_type}</li>
+                <li><strong>Funding Amount:</strong> ${formattedAmount}</li>
+                <li><strong>Equity Offered:</strong> ${equity}%</li>
+                <li><strong>Company Stage:</strong> ${company_stage}</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="https://unlockstartup.com/panel/investorpanel/query" style="background-color: #4C84FF; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold;">Review Pitch</a>
+            </div>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.5;">Please log in to your account to review this pitch in detail and take appropriate action. Your prompt response will be appreciated by the entrepreneur.</p>
+            
+            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 30px;">Best regards,<br>The Unlock Startup Team</p>
+            
+            <div style="text-align: center; border-top: 1px solid #e6e6e6; padding-top: 20px; font-size: 14px; color: #777;">
+              <p>© 2024 Unlock Startup. All rights reserved.</p>
+              <p>
+                <a href="mailto:contact@unlockstartup.com" style="color: #555; text-decoration: none;">contact@unlockstartup.com</a> | 
+                <a href="tel:+919266733959" style="color: #555; text-decoration: none;">+91 9266733959</a>
+              </p>
+            </div>
+          </div>
+        `,
+      };
+
+      // Send the email to investor (don't await this to avoid delaying the response)
+      transporter.sendMail(investorMailOptions).catch(emailError => {
+        console.error('Error sending investor notification email:', emailError);
+      });
+      
+    } catch (emailError) {
+      console.error('Error setting up email notification:', emailError);
+      // Don't return an error response here, as the pitch was successfully saved
+    }
 
     // Return success response
     res.status(201).json({
@@ -626,7 +844,7 @@ exports.getInvestorPitches = async (req, res) => {
 exports.updatePitchStatus = async (req, res) => {
   try {
     const { pitchId } = req.params;
-    const { status } = req.body;
+    const { status, reason } = req.body;
 
     if (!pitchId) {
       return res.status(400).json({
@@ -653,10 +871,16 @@ exports.updatePitchStatus = async (req, res) => {
 
     // Update the pitch status
     pitch.status = status;
+    
+    // Save the reason if provided
+    if (reason) {
+      pitch.acceptanceReason = reason;
+    }
+    
     await pitch.save();
 
-    // Send email notification if the pitch is accepted
-    if (status === 'accepted') {
+    // Send email notification for both acceptance and rejection
+    if (status === 'accepted' || status === 'rejected') {
       try {
         // Create nodemailer transporter
         let transporter = nodemailer.createTransport({
@@ -672,23 +896,42 @@ exports.updatePitchStatus = async (req, res) => {
         // Get investor name
         const investorName = pitch.investor.investorname || 'Investor';
         
+        // Add reason section to email if provided
+        const reasonSection = reason ? `
+          <div style="background-color: ${status === 'accepted' ? '#f9f9f9' : '#fff5f5'}; padding: 15px; border-left: 4px solid ${status === 'accepted' ? '#4caf50' : '#f44336'}; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: ${status === 'accepted' ? '#4caf50' : '#f44336'};">
+              ${status === 'accepted' ? 'Feedback' : 'Reason for Rejection'} from ${investorName}:
+            </h3>
+            <p style="margin-bottom: 0;">${reason}</p>
+          </div>
+        ` : '';
+        
         // Prepare email content
         const mailOptions = {
           from: 'info@unlockstartup.com',
-          to: pitch.contact_email, // Send to the pitcher's email
-          subject: 'Congratulations! Your Pitch Has Been Accepted',
+          to: pitch.contact_email,
+          subject: status === 'accepted' 
+            ? 'Congratulations! Your Pitch Has Been Accepted'
+            : 'Update on Your Pitch Submission',
           html: `
             <div style="font-family: Arial, sans-serif; line-height: 1.6; padding: 20px;">
-              <h2 style="color: #333;">Great News from Unlock Startup!</h2>
+              <h2 style="color: #333;">${status === 'accepted' ? 'Great News' : 'Update'} from Unlock Startup!</h2>
               <p>Dear ${pitch.founder_name},</p>
-              <p>Congratulations! We're excited to inform you that your pitch for <strong>${pitch.company_name}</strong> has been accepted by <strong>${investorName}</strong>.</p>
-              <p>Here are the details of your accepted pitch:</p>
+              <p>${status === 'accepted' 
+                ? `Congratulations! We're excited to inform you that your pitch for <strong>${pitch.company_name}</strong> has been accepted by <strong>${investorName}</strong>.`
+                : `We regret to inform you that your pitch for <strong>${pitch.company_name}</strong> has not been accepted by <strong>${investorName}</strong> at this time.`}</p>
+              
+              ${reasonSection}
+              
+              <p>Here are the details of your pitch:</p>
               <ul>
                 <li><strong>Company:</strong> ${pitch.company_name}</li>
                 <li><strong>Funding Amount:</strong> ₹${parseFloat(pitch.fundingAmount).toLocaleString()}</li>
                 <li><strong>Equity Offered:</strong> ${pitch.equity}%</li>
               </ul>
-              <p>The investor will contact you soon to discuss the next steps. Please ensure your contact details are up to date.</p>
+              ${status === 'accepted' 
+                ? '<p>The investor will contact you soon to discuss the next steps. Please ensure your contact details are up to date.</p>'
+                : '<p>We encourage you to continue developing your business and consider submitting an updated pitch in the future.</p>'}
               <p>If you have any questions or need assistance, feel free to reach out to our support team.</p>
               <p>Thank you for choosing Unlock Startup for your fundraising journey!</p>
               <img src="https://unlockstartup.com/unlock/uploads/Logo.png" alt="Unlock Startup Logo" />
@@ -702,7 +945,7 @@ exports.updatePitchStatus = async (req, res) => {
 
         // Send the email asynchronously (don't wait for it to complete)
         transporter.sendMail(mailOptions).catch(emailError => {
-          console.error('Error sending acceptance email:', emailError);
+          console.error('Error sending status update email:', emailError);
         });
       } catch (emailError) {
         console.error('Error setting up email notification:', emailError);

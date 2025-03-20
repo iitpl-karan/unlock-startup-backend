@@ -41,6 +41,10 @@ const InvestorPitchSchema = new Schema({
         enum: ['pending', 'accepted', 'rejected'],
         default: 'pending'
     },
+    acceptanceReason: {
+        type: String,
+        default: ''
+    },
     founder_name: {
         type: String,
         required: true
