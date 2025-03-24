@@ -14,7 +14,6 @@ const InvestorUser = new Schema({
   company: { type: String, default: '' },
   userType: { type: String, default: "Investor" }, // "Individual/startup", "Company", "admin"
   terms: { type: Boolean, default: false },
-  // New fields for detailed profile
   netWorth: { type: String, default: '' },
   investorImage: { type: String, default: '/assets/images/investor/Investor-item1.webp' },
   // Company Details
@@ -31,7 +30,8 @@ const InvestorUser = new Schema({
     type: { type: String, default: '' },
     stages: { type: String, default: '' },
     fundingTypes: { type: String, default: '' },
-    expertise: { type: String, default: '' }
+    expertise: { type: String, default: '' },
+    state: { type: String, default: '' },
   },
   // About Us
   aboutUs: [{ type: String }],

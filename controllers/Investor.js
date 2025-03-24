@@ -338,6 +338,7 @@ exports.updateInvestorProfile = async (req, res) => {
                 console.log("Parsed investorDetails:", investorDetails);
                 console.log("Investor type:", investorDetails.type);
                 console.log("Investor stages:", investorDetails.stages);
+                console.log("Investor state:", investorDetails.state);
             }
             if (req.body.aboutUs) {
                 aboutUs = JSON.parse(req.body.aboutUs);
@@ -411,7 +412,8 @@ exports.updateInvestorProfile = async (req, res) => {
                 type: investorDetails.type,
                 stages: investorDetails.stages,
                 fundingTypes: investorDetails.fundingTypes,
-                expertise: investorDetails.expertise
+                expertise: investorDetails.expertise,
+                state: investorDetails.state || (investor.investorDetails && investor.investorDetails.state)
             },
             aboutUs
         };
