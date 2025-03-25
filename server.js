@@ -23,6 +23,7 @@ const businessRouter = require('./routers/BusinessRoutes');
 const priceRouter = require('./routers/Pricerouter');
 const ChallengeRegistration = require('./routers/startupchallengeRegistration')
 const eventsRegistrationRouter = require('./routers/eventRegistrartion')
+const subscriptionRouter = require('./routers/subscription')
 const { saveChallengesToDatabase } = require('./utils/DummyChallenges');
 const { saveEventsToDatabase } = require("./utils/DummyEvent");
 const saveData = require("./config/addlocation");
@@ -35,6 +36,8 @@ const invoicerouter = require('./routers/genrateinvoice')
 
 const Investor = require('./routers/investor')
 const Investment = require('./routers/investment')
+
+const subscriptionController = require('./controllers/subscription');
 
 
 
@@ -65,7 +68,7 @@ app.use('/unlock/api/users', usersRouter)
 app.use('/unlock/api/normaluser', normalusersRouter)
 app.use('/unlock/api/events', eventsRouter)
 app.use('/unlock/api/events-registration', eventsRegistrationRouter)
-
+app.use('/unlock/api/subscription', subscriptionRouter)
 app.use('/unlock/api/business', businessRouter)
 app.use('/unlock/api/transactions', transactionsRouter)
 app.use('/unlock/api/pages', pagesRouter)
@@ -99,6 +102,8 @@ app.listen(port, () => {
   console.log(`Server started on ${port}`);
   console.log(process.env.key_id);
   
+  // Initialize default subscription plans
+  subscriptionController.initializeDefaultPlans();
 
   // Insert Dummy startup Challenges 
   //  saveChallengesToDatabase(5);
