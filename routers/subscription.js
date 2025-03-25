@@ -14,6 +14,9 @@ router.post("/verify-payment", subscriptionController.verifySubscriptionPayment)
 // Get investor's subscription
 router.get("/investor/:investorId", subscriptionController.getInvestorSubscription);
 
+// Get investor's payment history
+router.get("/payment-history/:investorId", subscriptionController.getInvestorPaymentHistory);
+
 // Cancel subscription
 router.put("/cancel/:subscriptionId", subscriptionController.cancelSubscription);
 

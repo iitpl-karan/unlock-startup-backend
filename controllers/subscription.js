@@ -90,12 +90,17 @@ exports.createSubscriptionOrder = async (req, res) => {
       });
     }
     
-    const investor = await User.findById(investorId);
-    if (!investor || investor.userType !== "Investor") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid investor"
-      });
+    // Only validate investor if it's not a temporary ID (during registration process)
+    let investor = null;
+    
+    if (!investorId.toString().startsWith('temp-')) {
+      investor = await User.findById(investorId);
+      if (!investor || investor.userType !== "Investor") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid investor"
+        });
+      }
     }
     
     // Create order - using the same approach as in startup-challenges
@@ -107,7 +112,8 @@ exports.createSubscriptionOrder = async (req, res) => {
         planId: plan._id.toString(),
         investorId: investorId,
         planName: plan.name,
-        planDuration: plan.duration
+        planDuration: plan.duration,
+        isNewRegistration: investorId.toString().startsWith('temp-') // Flag for new registrations
       }
     };
     
@@ -129,7 +135,7 @@ exports.createSubscriptionOrder = async (req, res) => {
     console.error("Error creating subscription order:", error);
     return res.status(500).json({
       success: false,
-      message: "Error creating subscription order"
+      message: "Error creating subscription order: " + (error.message || "Unknown error")
     });
   }
 };
@@ -142,7 +148,8 @@ exports.verifySubscriptionPayment = async (req, res) => {
       razorpay_payment_id, 
       razorpay_signature,
       planId,
-      investorId
+      investorId,
+      token
     } = req.body;
     
     // Verify signature
@@ -168,6 +175,23 @@ exports.verifySubscriptionPayment = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Plan not found"
+      });
+    }
+    
+    // Validate investor ID now - it should be a valid ID at this point
+    try {
+      const investor = await User.findById(investorId);
+      if (!investor || investor.userType !== "Investor") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid investor ID. Please ensure the user is registered properly."
+        });
+      }
+    } catch (error) {
+      console.error("Error validating investor ID:", error);
+      return res.status(400).json({
+        success: false,
+        message: "Invalid investor ID format or investor not found"
       });
     }
     
@@ -201,7 +225,8 @@ exports.verifySubscriptionPayment = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "Subscription renewed successfully",
-        subscription: existingSubscription
+        subscription: existingSubscription,
+        token: token // Pass back any token sent in the request
       });
     }
     
@@ -226,13 +251,14 @@ exports.verifySubscriptionPayment = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Subscription activated successfully",
-      subscription
+      subscription,
+      token: token // Pass back any token sent in the request
     });
   } catch (error) {
     console.error("Error verifying subscription payment:", error);
     return res.status(500).json({
       success: false,
-      message: "Error verifying subscription payment"
+      message: "Error verifying subscription payment: " + (error.message || "Unknown error")
     });
   }
 };
@@ -393,5 +419,123 @@ exports.RazorpayResponse = async (req, res) => {
   } catch (error) {
     console.error("Error while saving subscription payment details:", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// Get payment history for an investor
+exports.getInvestorPaymentHistory = async (req, res) => {
+  try {
+    const { investorId } = req.params;
+    console.log(`Fetching payment history for investor ID: ${investorId}`);
+    
+    // Check if investorId is valid
+    if (!investorId || investorId === 'undefined' || investorId === 'null') {
+      console.log('Invalid or missing investorId:', investorId);
+      return res.status(400).json({
+        success: false,
+        message: "Valid investor ID is required"
+      });
+    }
+    
+    // Check if investorId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(investorId)) {
+      console.log('Invalid ObjectId format for investorId:', investorId);
+      return res.status(400).json({
+        success: false,
+        message: "Invalid investor ID format"
+      });
+    }
+    
+    // Validate investor
+    try {
+      const investor = await User.findById(investorId);
+      console.log('Investor lookup result:', investor ? 'Found' : 'Not found');
+      
+      if (!investor) {
+        console.log(`Investor not found with ID: ${investorId}`);
+        // Instead of error, return empty payment array for better UX
+        return res.status(200).json({
+          success: true,
+          message: "No payment history available",
+          payments: []
+        });
+      }
+      
+      console.log(`Investor found:`, {
+        id: investor._id,
+        name: investor.name || investor.email,
+        userType: investor.userType
+      });
+      
+      // Removed userType check since user roles might vary
+    } catch (error) {
+      console.error('Error finding investor:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Error validating investor"
+      });
+    }
+    
+    // Get all subscriptions for this investor
+    try {
+      console.log(`Looking up subscriptions for investor: ${investorId}`);
+      const subscriptions = await InvestorSubscription.find({
+        investor: investorId
+      }).populate('plan').sort({ createdAt: -1 });
+      
+      console.log(`Found ${subscriptions.length} subscriptions`);
+      
+      // Return empty array if no subscriptions
+      if (!subscriptions || subscriptions.length === 0) {
+        console.log('No subscriptions found, returning empty payment history');
+        return res.status(200).json({
+          success: true,
+          message: "No subscription payments found",
+          payments: []
+        });
+      }
+      
+      // Format the data for frontend
+      const payments = subscriptions.map(subscription => {
+        console.log(`Processing subscription: ${subscription._id}`);
+        try {
+          return {
+            _id: subscription._id,
+            transactionId: subscription.paymentDetails?.razorpay_payment_id || 'N/A',
+            planName: subscription.plan?.name || 'Unknown Plan',
+            planType: subscription.plan?.planType || 'unknown',
+            amount: subscription.paymentDetails?.amount || 0,
+            status: subscription.status === 'active' ? 'success' : 
+                    subscription.status === 'pending' ? 'pending' : 
+                    subscription.status === 'canceled' ? 'failed' : 'failed',
+            paymentMethod: 'razorpay', // Default method since Razorpay is used
+            createdAt: subscription.startDate || subscription.createdAt,
+            endDate: subscription.endDate
+          };
+        } catch (error) {
+          console.error('Error formatting subscription:', error);
+          return null;
+        }
+      }).filter(payment => payment !== null);
+      
+      console.log(`Returning ${payments.length} formatted payments`);
+      
+      return res.status(200).json({
+        success: true,
+        payments
+      });
+    } catch (error) {
+      console.error('Error fetching subscriptions:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching subscriptions"
+      });
+    }
+  } catch (error) {
+    console.error("Error in getInvestorPaymentHistory:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching payment history: " + (error.message || "Unknown error")
+    });
   }
 }; 
