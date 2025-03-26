@@ -45,12 +45,11 @@ const subscriptionController = require('./controllers/subscription');
 
 app.use(cookieParser());
 
-// Configure CORS with specific options to fix API access issues
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://unlockstartup.com'],
+  origin: '*',  // Allows requests from any origin
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true // Allow cookies and authorization headers
 }));
 
 app.use(bodyParser.json());
