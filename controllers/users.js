@@ -273,7 +273,8 @@ exports.createNewUser = async (req, res) => {
         company, 
         industerytype, 
         phone,
-        fullName
+        fullName,
+        subscriptionId // Check if a subscription ID was passed from the frontend
       } = req.body;
       console.log(fullname, "running hgere")
       // Create Investor Details
@@ -302,7 +303,9 @@ exports.createNewUser = async (req, res) => {
           email: email || '',
           linkedIn: website || '',
           companyLogo: '/assets/images/company-logo-default.png'
-        }
+        },
+        // Set the currentSubscription if subscriptionId was provided
+        currentSubscription: subscriptionId || null
       });
 
       const savedInvestorDetails = await investorDetails.save();
@@ -315,13 +318,46 @@ exports.createNewUser = async (req, res) => {
           email,
           password: hashedPassword,
           userType,
-          investorDetailsId: savedInvestorDetails._id
+          investorDetailsId: savedInvestorDetails._id,
+          // Also set the currentSubscription in the User model
+          currentSubscription: subscriptionId || null
         });
         const savedUser = await user.save();
         if (savedUser) {
           // Optionally, update the investor details with the user ID
           savedInvestorDetails.userId = savedUser._id;
+          
+          // If we have a subscriptionId, check if we need to update the subscription's investor field
+          if (subscriptionId) {
+            try {
+              // Find the subscription and update its investor field if it's a temporary ID
+              const InvestorSubscription = require('../models/InvestorSubscription');
+              const subscription = await InvestorSubscription.findById(subscriptionId);
+              if (subscription && subscription.investor.toString().startsWith('temp-')) {
+                subscription.investor = savedUser._id;
+                await subscription.save();
+                console.log(`Updated subscription ${subscriptionId} investor field from temporary to ${savedUser._id}`);
+              }
+              
+              // Add subscription to payment history if not already there
+              if (!savedInvestorDetails.paymentHistory) {
+                savedInvestorDetails.paymentHistory = [];
+              }
+              
+              // Add to payment history if there's a related payment
+              const Payment = require('../models/Payment');
+              const payment = await Payment.findOne({ subscription: subscriptionId });
+              if (payment && !savedInvestorDetails.paymentHistory.includes(payment._id)) {
+                savedInvestorDetails.paymentHistory.push(payment._id);
+              }
+            } catch (error) {
+              console.error('Error updating subscription info during registration:', error);
+              // Continue as this is not a critical error
+            }
+          }
+          
           await savedInvestorDetails.save();
+          
           return res.status(200).json({
             message: "Investor User Created successfully",
             user: savedUser,

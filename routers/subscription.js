@@ -14,6 +14,9 @@ router.post("/verify-payment", subscriptionController.verifyPayment);
 // Activate free plan
 router.post("/activate-free-plan", subscriptionController.activateFreePlan);
 
+// Link an existing subscription to a user
+router.post("/link-subscription", subscriptionController.linkSubscriptionToUser);
+
 // Get investor's subscription details
 router.get("/investor/:investorId", subscriptionController.getInvestorSubscription);
 

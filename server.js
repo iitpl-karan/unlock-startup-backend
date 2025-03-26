@@ -24,6 +24,7 @@ const priceRouter = require('./routers/Pricerouter');
 const ChallengeRegistration = require('./routers/startupchallengeRegistration')
 const eventsRegistrationRouter = require('./routers/eventRegistrartion')
 const subscriptionRouter = require('./routers/subscription')
+const notificationRouter = require('./routers/notificationRoutes')
 const { saveChallengesToDatabase } = require('./utils/DummyChallenges');
 const { saveEventsToDatabase } = require("./utils/DummyEvent");
 const saveData = require("./config/addlocation");
@@ -38,6 +39,7 @@ const Investor = require('./routers/investor')
 const Investment = require('./routers/investment')
 
 const subscriptionController = require('./controllers/subscription');
+const notificationController = require('./controllers/notification');
 
 
 
@@ -76,6 +78,7 @@ app.use('/unlock/api/normaluser', normalusersRouter)
 app.use('/unlock/api/events', eventsRouter)
 app.use('/unlock/api/events-registration', eventsRegistrationRouter)
 app.use('/unlock/api/subscription', subscriptionRouter)
+app.use('/unlock/api/notifications', notificationRouter)
 app.use('/unlock/api/business', businessRouter)
 app.use('/unlock/api/transactions', transactionsRouter)
 app.use('/unlock/api/pages', pagesRouter)
@@ -111,6 +114,32 @@ app.listen(port, () => {
   
   // Initialize default subscription plans
   subscriptionController.initializeDefaultPlans();
+  
+  // Schedule subscription notification check (every day at 1 AM)
+  const checkSubscriptionsDaily = () => {
+    const now = new Date();
+    console.log(`[${now.toISOString()}] Checking for subscription expirations...`);
+    notificationController.checkSubscriptionExpirations({ body: {} }, { 
+      status: () => ({ 
+        json: (data) => console.log(`Subscription check result: ${data.message}`) 
+      }) 
+    });
+  };
+  
+  // Run immediately on startup
+  checkSubscriptionsDaily();
+  
+  // Schedule to run daily
+  setInterval(checkSubscriptionsDaily, 24 * 60 * 60 * 1000);
+  
+  // Clean up expired notifications weekly
+  setInterval(() => {
+    notificationController.cleanupExpiredNotifications({ body: {} }, { 
+      status: () => ({ 
+        json: (data) => console.log(`Notification cleanup result: ${data.message}`) 
+      }) 
+    });
+  }, 7 * 24 * 60 * 60 * 1000);
 
   // Insert Dummy startup Challenges 
   //  saveChallengesToDatabase(5);
