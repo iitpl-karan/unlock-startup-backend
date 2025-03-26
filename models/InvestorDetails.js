@@ -40,6 +40,23 @@ const InvestorUser = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'InvestorPitch'
   }],
+  // Reference to user in Users collection
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  // Subscription information
+  currentSubscription: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'InvestorSubscription',
+    default: null
+  },
+  // Payment history reference
+  paymentHistory: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Payment'
+  }],
   createdAt: { type: Date, default: null }
 }, { timestamps: true });
 

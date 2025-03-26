@@ -9,21 +9,28 @@ router.get("/plans", subscriptionController.getAllPlans);
 router.post("/create-order", subscriptionController.createSubscriptionOrder);
 
 // Verify payment and activate subscription
-router.post("/verify-payment", subscriptionController.verifySubscriptionPayment);
+router.post("/verify-payment", subscriptionController.verifyPayment);
 
-// Get investor's subscription
+// Activate free plan
+router.post("/activate-free-plan", subscriptionController.activateFreePlan);
+
+// Get investor's subscription details
 router.get("/investor/:investorId", subscriptionController.getInvestorSubscription);
+
+// Refresh investor's subscription status and fix any issues
+router.get("/refresh-status/:investorId", subscriptionController.refreshSubscriptionStatus);
 
 // Get investor's payment history
 router.get("/payment-history/:investorId", subscriptionController.getInvestorPaymentHistory);
 
-// Cancel subscription
-router.put("/cancel/:subscriptionId", subscriptionController.cancelSubscription);
+// Admin routes
+router.get("/admin/plans", subscriptionController.getAllPlans);
+router.post("/admin/plans", subscriptionController.createPlan);
+router.put("/admin/plans/:planId", subscriptionController.updatePlan);
+router.delete("/admin/plans/:planId", subscriptionController.deletePlan);
+router.get("/admin/subscriptions", subscriptionController.getAllSubscriptions);
 
-// Admin: Get all subscriptions
-router.get("/all", subscriptionController.getAllSubscriptions);
-
-// Razorpay webhook endpoint
-router.post("/razorpayresponse", subscriptionController.RazorpayResponse);
+// Public webhook for Razorpay
+router.post("/razorpay-webhook", subscriptionController.RazorpayResponse);
 
 module.exports = router; 

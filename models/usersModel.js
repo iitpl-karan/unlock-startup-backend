@@ -13,7 +13,18 @@ const UsersSchema = new Schema({
   investorDetailsId: { type: Schema.Types.ObjectId, default: null, ref: 'InvestorDetails' }, // Reference to investorDetails document
   companyDetailsId: { type: Schema.Types.ObjectId, default: null , ref : 'CompanyDetails' }, // Reference to companyDetails document, if userType is "Company"
   userDetailsId: { type: Schema.Types.ObjectId, default: null  , ref: 'UserDetails' }, // Reference to userDetails document, if userType is "Individual/startup"
-  status: { type: Number, default: 1 }, 
+  status: { type: Number, default: 1 },
+  // Subscription information
+  currentSubscription: {
+    type: Schema.Types.ObjectId,
+    ref: 'InvestorSubscription',
+    default: null
+  },
+  // Payment history
+  paymentHistory: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Payment'
+  }]
 }, {timestamps : true});
 
 module.exports = mongoose.model("User", UsersSchema); 

@@ -65,10 +65,25 @@ const PaymentSchema = new Schema({
         default: 'Online'
     },
     transactionStatus: { type: String, default: 1 },
-
-});
-
-
+    
+    // Reference to subscription
+    subscription: {
+        type: mongoose.Types.ObjectId,
+        ref: 'InvestorSubscription',
+        default: null
+    },
+    
+    // Payment type (e.g., 'Subscription', 'Challenge', etc.)
+    paymentType: {
+        type: String,
+        default: 'Subscription'
+    },
+    
+    // Formatted payment ID for display
+    payment_id: {
+        type: String
+    }
+}, { timestamps: true });
 
 module.exports = mongoose.model("payment", PaymentSchema);
 

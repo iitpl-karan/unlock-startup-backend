@@ -5,6 +5,8 @@ const User = require("../models/usersModel");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const Payment = require("../models/Payment");
+const InvestorUser = require("../models/InvestorDetails");
+const jwt = require("jsonwebtoken");
 
 // Create Razorpay instance - use the same credentials that work in the challenge upload
 const razorpayInstance = new Razorpay({
@@ -47,14 +49,299 @@ exports.initializeDefaultPlans = async () => {
             "Investment analytics dashboard"
           ],
           planType: "yearly"
+        },
+        {
+          name: "Test Plan",
+          duration: 1/30, // 1 day (represented as a fraction of a month)
+          price: 0,
+          description: "Test subscription plan with 0 rupees for 1 day",
+          features: [
+            "Access to all investor features for testing",
+            "No payment required",
+            "Expires after 1 day"
+          ],
+          planType: "monthly"
         }
       ];
       
       await SubscriptionPlan.insertMany(defaultPlans);
       console.log("Default subscription plans created");
+    } else {
+      // Check if test plan exists, if not, create it
+      const testPlanExists = await SubscriptionPlan.findOne({ name: "Test Plan" });
+      if (!testPlanExists) {
+        const testPlan = new SubscriptionPlan({
+          name: "Test Plan",
+          duration: 1/30, // 1 day (represented as a fraction of a month)
+          price: 0,
+          description: "Test subscription plan with 0 rupees for 1 day",
+          features: [
+            "Access to all investor features for testing",
+            "No payment required",
+            "Expires after 1 day"
+          ],
+          planType: "monthly",
+          isActive: true
+        });
+        
+        await testPlan.save();
+        console.log("Test plan created");
+      }
     }
   } catch (error) {
     console.error("Error initializing subscription plans:", error);
+  }
+};
+
+// Add a test plan with 0 rupees for 1 day
+exports.addTestPlan = async (req, res) => {
+  try {
+    // Check if test plan already exists
+    const existingTestPlan = await SubscriptionPlan.findOne({ name: "Test Plan" });
+    
+    if (existingTestPlan) {
+      return res.status(200).json({
+        success: true,
+        message: "Test plan already exists",
+        plan: existingTestPlan
+      });
+    }
+    
+    // Create a new test plan
+    const testPlan = new SubscriptionPlan({
+      name: "Test Plan",
+      duration: 1/30, // 1 day (represented as a fraction of a month)
+      price: 0,
+      description: "Test subscription plan with 0 rupees for 1 day",
+      features: [
+        "Access to all investor features for testing",
+        "No payment required",
+        "Expires after 1 day"
+      ],
+      planType: "monthly",
+      isActive: true
+    });
+    
+    await testPlan.save();
+    
+    return res.status(201).json({
+      success: true,
+      message: "Test plan created successfully",
+      plan: testPlan
+    });
+  } catch (error) {
+    console.error("Error creating test plan:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error creating test plan: " + (error.message || "Unknown error")
+    });
+  }
+};
+
+// Special endpoint for activating free subscription plans (bypassing Razorpay)
+exports.activateFreePlan = async (req, res) => {
+  try {
+    const { planId, investorId } = req.body;
+    
+    console.log(`Activating free plan ${planId} for investor ${investorId}`);
+    
+    // Check if investor exists or is a temporary ID
+    let user = null;
+    let investorUser = null;
+    let isTemporaryUser = false;
+    
+    if (!investorId.toString().startsWith('temp-')) {
+      // First, check if this is a User ID
+      user = await User.findById(investorId);
+      
+      if (user) {
+        console.log(`Found user with ID ${investorId}`);
+        // If the user has an investorDetailsId, fetch the investor details
+        if (user.investorDetailsId) {
+          investorUser = await InvestorUser.findById(user.investorDetailsId);
+          console.log(`Found InvestorUser via investorDetailsId: ${investorUser ? 'Yes' : 'No'}`);
+        } 
+        
+        // If no investor details found and we have an email, try finding by email
+        if (!investorUser && user.email) {
+          investorUser = await InvestorUser.findOne({ investoremail: user.email });
+          console.log(`Found InvestorUser via email: ${investorUser ? 'Yes' : 'No'}`);
+          
+          // If we found an investor by email but it's not linked, update the user
+          if (investorUser && !user.investorDetailsId) {
+            user.investorDetailsId = investorUser._id;
+            await user.save();
+            console.log(`Updated user with investorDetailsId: ${investorUser._id}`);
+          }
+        }
+      } else {
+        // Check if this is an InvestorUser ID directly
+        investorUser = await InvestorUser.findById(investorId);
+        console.log(`Found InvestorUser directly with ID ${investorId}: ${investorUser ? 'Yes' : 'No'}`);
+        
+        // If we found an investor but no user, try to find a matching user
+        if (investorUser) {
+          if (investorUser.userId) {
+            user = await User.findById(investorUser.userId);
+            console.log(`Found user via userId: ${user ? 'Yes' : 'No'}`);
+          } 
+          
+          // If no user found via userId, try by email
+          if (!user && investorUser.investoremail) {
+            user = await User.findOne({ email: investorUser.investoremail });
+            console.log(`Found user via email: ${user ? 'Yes' : 'No'}`);
+            
+            // If we found a user by email but it's not linked, update the relationship
+            if (user) {
+              if (!user.investorDetailsId) {
+                user.investorDetailsId = investorUser._id;
+                await user.save();
+                console.log(`Linked User to InvestorDetails: ${user._id} -> ${investorUser._id}`);
+              }
+              
+              if (!investorUser.userId) {
+                investorUser.userId = user._id;
+                await investorUser.save();
+                console.log(`Linked InvestorDetails to User: ${investorUser._id} -> ${user._id}`);
+              }
+            }
+          }
+        }
+      }
+      
+      // If we still don't have a user, return an error
+      if (!user && !investorUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'Investor not found'
+        });
+      }
+    } else {
+      // Create a temporary user object (not a Mongoose document) for free plan activation before registration
+      isTemporaryUser = true;
+      const tempId = new mongoose.Types.ObjectId();
+      user = {
+        _id: tempId,
+        email: `temp-${Date.now()}@example.com`,
+        userType: 'Investor',
+        isTemporary: true // Flag to identify this as a temporary user
+      };
+      console.log('Created temporary user with ID:', tempId);
+    }
+    
+    // Find plan
+    const plan = await SubscriptionPlan.findById(planId);
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Subscription plan not found'
+      });
+    }
+    
+    if (plan.price > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'This plan is not free and requires payment'
+      });
+    }
+    
+    // Calculate end date based on plan duration
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + plan.duration);
+    
+    // Determine which ID to use for the investor field (prioritize real user)
+    const subscriberId = user._id;
+    console.log(`Using subscriberId for subscription:`, subscriberId);
+    
+    // Create a new subscription
+    const subscription = new InvestorSubscription({
+      investor: subscriberId,
+      plan: plan._id,
+      startDate,
+      endDate,
+      isActive: true,
+      status: 'active',
+      paymentDetails: {
+        amount: 0,
+        currency: 'INR'
+      }
+    });
+    
+    const savedSubscription = await subscription.save();
+    console.log(`Created subscription: ${savedSubscription._id}`);
+    
+    // Create payment record for free plan
+    const payment = new Payment({
+      amount: 0,
+      status: 'success',
+      order_id: `free-${Date.now()}`,
+      payment_id: `free-${Date.now()}`,
+      method: 'free',
+      captured: true,
+      description: `Free Subscription to ${plan.name}`,
+      paymentType: 'Subscription',
+      user: subscriberId,
+      subscription: savedSubscription._id
+    });
+    
+    const savedPayment = await payment.save();
+    console.log(`Created payment record: ${savedPayment._id}`);
+    
+    // Update models with the new subscription
+    const updatePromises = [];
+    
+    // Update user model if it's a real user (not a temporary object)
+    if (user && !isTemporaryUser) {
+      console.log(`Updating real User model with subscription:`, user._id);
+      user.currentSubscription = savedSubscription._id;
+      if (!user.paymentHistory) {
+        user.paymentHistory = [];
+      }
+      user.paymentHistory.push(savedPayment._id);
+      updatePromises.push(user.save());
+      console.log(`Updated User model with subscription: ${savedSubscription._id}`);
+    }
+    
+    // Update InvestorUser model if found
+    if (investorUser) {
+      investorUser.currentSubscription = savedSubscription._id;
+      if (!investorUser.paymentHistory) {
+        investorUser.paymentHistory = [];
+      }
+      investorUser.paymentHistory.push(savedPayment._id);
+      updatePromises.push(investorUser.save());
+      console.log(`Updated InvestorUser model with subscription: ${savedSubscription._id}`);
+    }
+    
+    // Wait for all update operations to complete
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
+      console.log(`Successfully applied all model updates`);
+    } else {
+      console.log(`No model updates to apply (temporary user)`);
+    }
+    
+    // Get populated subscription to return
+    const populatedSubscription = await InvestorSubscription.findById(savedSubscription._id).populate('plan');
+    
+    // Calculate days remaining
+    const now = new Date();
+    const daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Free plan activated successfully',
+      subscription: populatedSubscription,
+      daysRemaining: Math.max(0, daysRemaining),
+      isExpired: false
+    });
+  } catch (error) {
+    console.error('Error activating free plan:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error activating free plan: ' + (error.message || 'Unknown error')
+    });
   }
 };
 
@@ -140,100 +427,51 @@ exports.createSubscriptionOrder = async (req, res) => {
   }
 };
 
-// Verify payment and activate subscription
-exports.verifySubscriptionPayment = async (req, res) => {
+exports.verifyPayment = async (req, res) => {
   try {
-    const { 
-      razorpay_order_id, 
-      razorpay_payment_id, 
-      razorpay_signature,
-      planId,
-      investorId,
-      token
-    } = req.body;
-    
-    // Verify signature
-    const sign = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSign = crypto
-      .createHmac("sha256", process.env.key_secret)
-      .update(sign.toString())
-      .digest("hex");
-    
-    // Create isAuthentic flag like in the working implementation
-    const isAuthentic = expectedSign === razorpay_signature;
-    
-    if (!isAuthentic) {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planId, investorId } = req.body;
+
+    // Generate signature to verify payment
+    const shasum = crypto.createHmac('sha256', process.env.key_secret);
+    shasum.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+    const generatedSignature = shasum.digest('hex');
+
+    // Validate signature
+    if (generatedSignature !== razorpay_signature) {
       return res.status(400).json({
         success: false,
-        message: "Invalid payment signature"
+        message: 'Payment verification failed: Invalid signature'
       });
     }
     
-    // Get plan details
+    // Find plan
     const plan = await SubscriptionPlan.findById(planId);
     if (!plan) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
-        message: "Plan not found"
+        message: 'Subscription plan not found'
       });
     }
-    
-    // Validate investor ID now - it should be a valid ID at this point
-    try {
-      const investor = await User.findById(investorId);
-      if (!investor || investor.userType !== "Investor") {
-        return res.status(400).json({
+
+    // Find investor user
+    const user = await User.findById(investorId);
+    if (!user) {
+      return res.status(404).json({
           success: false,
-          message: "Invalid investor ID. Please ensure the user is registered properly."
-        });
-      }
-    } catch (error) {
-      console.error("Error validating investor ID:", error);
-      return res.status(400).json({
-        success: false,
-        message: "Invalid investor ID format or investor not found"
+        message: 'Investor not found'
       });
     }
-    
-    // Calculate subscription end date
+
+    // Calculate end date based on plan duration
     const startDate = new Date();
     const endDate = new Date();
+    // Plan duration is in months
     endDate.setMonth(endDate.getMonth() + plan.duration);
     
-    // Check if investor already has an active subscription
-    const existingSubscription = await InvestorSubscription.findOne({
-      investor: investorId,
-      isActive: true,
-      status: 'active'
-    });
-    
-    if (existingSubscription) {
-      // Update existing subscription
-      existingSubscription.plan = planId;
-      existingSubscription.startDate = startDate;
-      existingSubscription.endDate = endDate;
-      existingSubscription.renewalCount += 1;
-      existingSubscription.paymentDetails = {
-        razorpay_order_id,
-        razorpay_payment_id,
-        razorpay_signature,
-        amount: plan.price,
-      };
-      
-      await existingSubscription.save();
-      
-      return res.status(200).json({
-        success: true,
-        message: "Subscription renewed successfully",
-        subscription: existingSubscription,
-        token: token // Pass back any token sent in the request
-      });
-    }
-    
-    // Create new subscription
+    // Create a new subscription
     const subscription = new InvestorSubscription({
-      investor: investorId,
-      plan: planId,
+      investor: user._id,
+      plan: plan._id,
       startDate,
       endDate,
       isActive: true,
@@ -243,74 +481,250 @@ exports.verifySubscriptionPayment = async (req, res) => {
         razorpay_payment_id,
         razorpay_signature,
         amount: plan.price,
+        currency: 'INR'
       }
     });
-    
-    await subscription.save();
+
+    const savedSubscription = await subscription.save();
+
+    // Create payment record
+    const payment = new Payment({
+      amount: plan.price,
+      status: 'success',
+      order_id: razorpay_order_id,
+      payment_id: razorpay_payment_id,
+      method: 'razorpay',
+      captured: true,
+      description: `Subscription to ${plan.name}`,
+      paymentType: 'Subscription',
+      user: user._id,
+      subscription: savedSubscription._id
+    });
+
+    const savedPayment = await payment.save();
+
+    // Update user model with subscription reference
+    user.currentSubscription = savedSubscription._id;
+    if (!user.paymentHistory) {
+      user.paymentHistory = [];
+    }
+    user.paymentHistory.push(savedPayment._id);
+    await user.save();
+
+    // If user is an investor, also update InvestorUser model
+    if (user.userType === 'Investor' && user.investorDetailsId) {
+      try {
+        const investorUser = await InvestorUser.findById(user.investorDetailsId);
+        if (investorUser) {
+          investorUser.currentSubscription = savedSubscription._id;
+          if (!investorUser.paymentHistory) {
+            investorUser.paymentHistory = [];
+          }
+          investorUser.paymentHistory.push(savedPayment._id);
+          await investorUser.save();
+        }
+      } catch (error) {
+        console.error('Error updating InvestorUser with subscription:', error);
+        // Continue as this is not a critical error
+      }
+    }
+
+    // For direct investor users without a User model link
+    try {
+      const directInvestor = await InvestorUser.findOne({ investoremail: user.email });
+      if (directInvestor && !directInvestor.currentSubscription) {
+        directInvestor.currentSubscription = savedSubscription._id;
+        if (!directInvestor.paymentHistory) {
+          directInvestor.paymentHistory = [];
+        }
+        directInvestor.paymentHistory.push(savedPayment._id);
+        await directInvestor.save();
+      }
+    } catch (error) {
+      console.error('Error updating direct InvestorUser with subscription:', error);
+      // Continue as this is not a critical error
+    }
+
+    // Generate JWT token
+    const payload = {
+      user: {
+        id: user._id,
+        email: user.email,
+        subscriptionId: savedSubscription._id
+      }
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
     
     return res.status(200).json({
       success: true,
-      message: "Subscription activated successfully",
-      subscription,
-      token: token // Pass back any token sent in the request
+      message: 'Payment verified and subscription activated successfully',
+      subscription: savedSubscription,
+      token
     });
   } catch (error) {
-    console.error("Error verifying subscription payment:", error);
+    console.error('Error verifying payment:', error);
     return res.status(500).json({
       success: false,
-      message: "Error verifying subscription payment: " + (error.message || "Unknown error")
+      message: 'Error verifying payment: ' + (error.message || 'Unknown error')
     });
   }
 };
 
-// Get investor's subscription details
+// Get investor's subscription
 exports.getInvestorSubscription = async (req, res) => {
   try {
     const { investorId } = req.params;
+    console.log(`Fetching subscription for ID: ${investorId}`);
     
-    const subscription = await InvestorSubscription.findOne({
-      investor: investorId,
-      isActive: true
-    }).populate('plan');
-    
-    if (!subscription) {
-      return res.status(404).json({
+    // Validate investor ID
+    if (!investorId || !mongoose.Types.ObjectId.isValid(investorId)) {
+      return res.status(400).json({
         success: false,
-        message: "No active subscription found"
+        message: 'Invalid investor ID'
       });
     }
     
-    // Calculate days remaining
-    const currentDate = new Date();
-    const endDate = new Date(subscription.endDate);
-    const daysRemaining = Math.ceil((endDate - currentDate) / (1000 * 60 * 60 * 24));
+    // PRIMARY APPROACH: Directly query the InvestorSubscription model
+    // This is our main lookup method since the subscription's investor field
+    // is the most reliable way to find a subscription
     
-    // Check if subscription is expired
-    if (daysRemaining <= 0) {
+    // Find active subscription with this investor ID
+    let subscription = await InvestorSubscription.findOne({ 
+      investor: investorId,
+      isActive: true 
+    }).populate('plan').sort({ createdAt: -1 });
+    
+    let lookupMethod = 'Direct InvestorSubscription query';
+    
+    // If no subscription found with the direct ID, we need to try other IDs
+    if (!subscription) {
+      console.log(`No subscription found directly with ID: ${investorId}, trying to find related IDs`);
+      
+      // Find user and investor details to get all possible investor IDs
+      const user = await User.findById(investorId);
+      let investorUser = null;
+      let possibleIds = [investorId]; // Always include the original ID
+      
+      // If this is a User ID
+      if (user) {
+        console.log(`Found user with ID ${investorId}`);
+        
+        // Add investorDetailsId if it exists
+        if (user.investorDetailsId) {
+          investorUser = await InvestorUser.findById(user.investorDetailsId);
+          if (investorUser) {
+            possibleIds.push(user.investorDetailsId);
+            console.log(`Added investorDetailsId: ${user.investorDetailsId}`);
+          }
+        }
+        
+        // Try to find InvestorUser by email if not found by ID
+        if (!investorUser && user.email) {
+          investorUser = await InvestorUser.findOne({ investoremail: user.email });
+          if (investorUser) {
+            possibleIds.push(investorUser._id);
+            console.log(`Added InvestorUser found by email: ${investorUser._id}`);
+            
+            // Update relationship if needed
+            if (!user.investorDetailsId) {
+              user.investorDetailsId = investorUser._id;
+              await user.save();
+              console.log(`Updated User with investorDetailsId: ${investorUser._id}`);
+            }
+          }
+        }
+      } 
+      // If this is an InvestorUser ID
+      else {
+        investorUser = await InvestorUser.findById(investorId);
+        if (investorUser) {
+          console.log(`Found InvestorUser with ID ${investorId}`);
+          
+          // Add userId if it exists
+          if (investorUser.userId) {
+            const linkedUser = await User.findById(investorUser.userId);
+            if (linkedUser) {
+              possibleIds.push(linkedUser._id);
+              console.log(`Added linked userId: ${linkedUser._id}`);
+            }
+          }
+          
+          // Try to find User by email if not found by ID
+          if (!investorUser.userId && investorUser.investoremail) {
+            const emailUser = await User.findOne({ email: investorUser.investoremail });
+            if (emailUser) {
+              possibleIds.push(emailUser._id);
+              console.log(`Added User found by email: ${emailUser._id}`);
+              
+              // Update relationship if needed
+              if (!investorUser.userId) {
+                investorUser.userId = emailUser._id;
+                await investorUser.save();
+                console.log(`Updated InvestorUser with userId: ${emailUser._id}`);
+              }
+              
+              if (!emailUser.investorDetailsId) {
+                emailUser.investorDetailsId = investorUser._id;
+                await emailUser.save();
+                console.log(`Updated User with investorDetailsId: ${investorUser._id}`);
+              }
+            }
+          }
+        }
+      }
+      
+      console.log(`Searching for subscription with possible IDs:`, possibleIds);
+      
+      // Search for subscriptions with any of these IDs
+      subscription = await InvestorSubscription.findOne({ 
+        investor: { $in: possibleIds },
+        isActive: true 
+      }).populate('plan').sort({ createdAt: -1 });
+      
+      if (subscription) {
+        lookupMethod = 'Related ID InvestorSubscription query';
+        console.log(`Found subscription via related ID: ${subscription.investor}`);
+      }
+    }
+    
+    // If we still didn't find a subscription, return appropriate response
+    if (!subscription) {
+      console.log(`No subscription found for investor ID: ${investorId}`);
+      return res.status(200).json({
+        success: false,
+        message: 'No active subscription found',
+        lookupMethod
+      });
+    }
+    
+    // We found a subscription - calculate days remaining and check if expired
+    const now = new Date();
+    const endDate = new Date(subscription.endDate);
+    const daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+    const isExpired = now > endDate;
+    
+    // If subscription is expired but still marked as active, update its status
+    if (isExpired && subscription.isActive) {
       subscription.isActive = false;
       subscription.status = 'expired';
       await subscription.save();
-      
-      return res.status(200).json({
-        success: true,
-        message: "Subscription has expired",
-        subscription,
-        daysRemaining: 0,
-        isExpired: true
-      });
+      console.log(`Updated expired subscription: ${subscription._id}`);
     }
     
+    // Return the subscription with days remaining and expiry status
     return res.status(200).json({
       success: true,
       subscription,
-      daysRemaining,
-      isExpired: false
+      daysRemaining: Math.max(0, daysRemaining),
+      isExpired,
+      lookupMethod
     });
   } catch (error) {
-    console.error("Error fetching investor subscription:", error);
+    console.error('Error fetching investor subscription:', error);
     return res.status(500).json({
       success: false,
-      message: "Error fetching investor subscription"
+      message: 'Error fetching subscription details: ' + (error.message || 'Unknown error')
     });
   }
 };
@@ -422,7 +836,7 @@ exports.RazorpayResponse = async (req, res) => {
   }
 };
 
-// Get payment history for an investor
+// Update the payment history endpoint to also show plan information
 exports.getInvestorPaymentHistory = async (req, res) => {
   try {
     const { investorId } = req.params;
@@ -446,96 +860,540 @@ exports.getInvestorPaymentHistory = async (req, res) => {
       });
     }
     
-    // Validate investor
-    try {
-      const investor = await User.findById(investorId);
-      console.log('Investor lookup result:', investor ? 'Found' : 'Not found');
-      
-      if (!investor) {
-        console.log(`Investor not found with ID: ${investorId}`);
-        // Instead of error, return empty payment array for better UX
-        return res.status(200).json({
-          success: true,
-          message: "No payment history available",
-          payments: []
-        });
+    // PRIMARY APPROACH: Directly query the Payment collection where user field matches our ID
+    // This is the most reliable way to find payments
+    let paymentHistory = await Payment.find({
+      user: investorId,
+      paymentType: 'Subscription'
+    }).populate('subscription').sort({ createdAt: -1 });
+    
+    console.log(`Found ${paymentHistory.length} payments directly with user ID: ${investorId}`);
+    
+    // Collect all possible related IDs for a thorough search
+    const possibleIds = [investorId]; // Always include the original ID
+    
+    // Try to find User and InvestorUser to get all possible IDs
+    const user = await User.findById(investorId);
+    let investorUser = null;
+    
+    if (user) {
+      // If user has investorDetailsId, add it
+      if (user.investorDetailsId) {
+        investorUser = await InvestorUser.findById(user.investorDetailsId);
+        if (investorUser) {
+          possibleIds.push(investorUser._id);
+          console.log(`Added investorDetailsId: ${investorUser._id}`);
+        }
       }
       
-      console.log(`Investor found:`, {
-        id: investor._id,
-        name: investor.name || investor.email,
-        userType: investor.userType
-      });
-      
-      // Removed userType check since user roles might vary
-    } catch (error) {
-      console.error('Error finding investor:', error);
-      return res.status(500).json({
-        success: false,
-        message: "Error validating investor"
-      });
+      // If no investorUser found by ID, try email
+      if (!investorUser && user.email) {
+        investorUser = await InvestorUser.findOne({ investoremail: user.email });
+        if (investorUser) {
+          possibleIds.push(investorUser._id);
+          console.log(`Added InvestorUser found by email: ${investorUser._id}`);
+        }
+      }
+    } else {
+      // If not a User ID, check if it's an InvestorUser ID
+      investorUser = await InvestorUser.findById(investorId);
+      if (investorUser) {
+        // If investorUser has userId, add it
+        if (investorUser.userId) {
+          const linkedUser = await User.findById(investorUser.userId);
+          if (linkedUser) {
+            possibleIds.push(linkedUser._id);
+            console.log(`Added linked userId: ${linkedUser._id}`);
+          }
+        }
+        
+        // If no User found by ID, try email
+        if (!investorUser.userId && investorUser.investoremail) {
+          const emailUser = await User.findOne({ email: investorUser.investoremail });
+          if (emailUser) {
+            possibleIds.push(emailUser._id);
+            console.log(`Added User found by email: ${emailUser._id}`);
+          }
+        }
+      }
     }
     
-    // Get all subscriptions for this investor
-    try {
-      console.log(`Looking up subscriptions for investor: ${investorId}`);
-      const subscriptions = await InvestorSubscription.find({
-        investor: investorId
-      }).populate('plan').sort({ createdAt: -1 });
+    // If we have more than one ID to search with, find payments for all IDs
+    if (possibleIds.length > 1) {
+      console.log(`Searching for payments with additional IDs:`, possibleIds.slice(1));
       
-      console.log(`Found ${subscriptions.length} subscriptions`);
+      const additionalPayments = await Payment.find({
+        user: { $in: possibleIds.slice(1) }, // Exclude the original ID which we already queried
+        paymentType: 'Subscription'
+      }).populate('subscription').sort({ createdAt: -1 });
       
-      // Return empty array if no subscriptions
-      if (!subscriptions || subscriptions.length === 0) {
-        console.log('No subscriptions found, returning empty payment history');
-        return res.status(200).json({
-          success: true,
-          message: "No subscription payments found",
-          payments: []
-        });
-      }
+      console.log(`Found ${additionalPayments.length} payments with related IDs`);
       
-      // Format the data for frontend
-      const payments = subscriptions.map(subscription => {
-        console.log(`Processing subscription: ${subscription._id}`);
-        try {
-          return {
-            _id: subscription._id,
-            transactionId: subscription.paymentDetails?.razorpay_payment_id || 'N/A',
-            planName: subscription.plan?.name || 'Unknown Plan',
-            planType: subscription.plan?.planType || 'unknown',
-            amount: subscription.paymentDetails?.amount || 0,
-            status: subscription.status === 'active' ? 'success' : 
-                    subscription.status === 'pending' ? 'pending' : 
-                    subscription.status === 'canceled' ? 'failed' : 'failed',
-            paymentMethod: 'razorpay', // Default method since Razorpay is used
-            createdAt: subscription.startDate || subscription.createdAt,
-            endDate: subscription.endDate
-          };
-        } catch (error) {
-          console.error('Error formatting subscription:', error);
-          return null;
+      // Merge payment histories, avoiding duplicates
+      if (additionalPayments.length > 0) {
+        const paymentIds = new Set(paymentHistory.map(p => p._id.toString()));
+        for (const payment of additionalPayments) {
+          if (!paymentIds.has(payment._id.toString())) {
+            paymentHistory.push(payment);
+            paymentIds.add(payment._id.toString());
+          }
         }
-      }).filter(payment => payment !== null);
-      
-      console.log(`Returning ${payments.length} formatted payments`);
-      
-      return res.status(200).json({
-        success: true,
-        payments
-      });
-    } catch (error) {
-      console.error('Error fetching subscriptions:', error);
-      return res.status(500).json({
-        success: false,
-        message: "Error fetching subscriptions"
-      });
+      }
     }
+    
+    // ADDITIONAL APPROACH: Check for payments where the subscription's investor matches our ID
+    // This handles cases where the payment.user field might be different from the investor ID
+    
+    // First get all subscriptions for our IDs
+    const subscriptions = await InvestorSubscription.find({
+      investor: { $in: possibleIds }
+    });
+    
+    if (subscriptions.length > 0) {
+      console.log(`Found ${subscriptions.length} subscriptions related to IDs:`, possibleIds);
+      
+      // Get subscription IDs
+      const subscriptionIds = subscriptions.map(s => s._id);
+      
+      // Find payments linked to these subscriptions
+      const subscriptionPayments = await Payment.find({
+        subscription: { $in: subscriptionIds },
+        paymentType: 'Subscription'
+      }).populate('subscription').sort({ createdAt: -1 });
+      
+      console.log(`Found ${subscriptionPayments.length} payments via subscription references`);
+      
+      // Merge with payment history, avoiding duplicates
+      if (subscriptionPayments.length > 0) {
+        const paymentIds = new Set(paymentHistory.map(p => p._id.toString()));
+        for (const payment of subscriptionPayments) {
+          if (!paymentIds.has(payment._id.toString())) {
+            paymentHistory.push(payment);
+            paymentIds.add(payment._id.toString());
+          }
+        }
+      }
+    }
+    
+    // Enhance payment records with plan information
+    const enhancedPayments = await Promise.all(
+      paymentHistory.map(async payment => {
+        let planName = 'Unknown Plan';
+        let planType = 'unknown';
+        let endDate = null;
+        
+        try {
+          if (payment.subscription) {
+            const subscription = payment.subscription;
+            // If subscription.plan is already populated, use it, otherwise populate
+            if (subscription.plan && typeof subscription.plan === 'object') {
+              planName = subscription.plan.name;
+              planType = subscription.plan.planType;
+            } else if (subscription.plan) {
+              const plan = await SubscriptionPlan.findById(subscription.plan);
+              if (plan) {
+                planName = plan.name;
+                planType = plan.planType;
+              }
+            }
+            
+            endDate = subscription.endDate;
+          }
+        } catch (error) {
+          console.log('Error getting plan details for payment:', error);
+        }
+        
+        return {
+          _id: payment._id,
+          transactionId: payment.payment_id || payment._id,
+          planName,
+          planType,
+          amount: payment.amount,
+          status: payment.status,
+          paymentMethod: payment.method,
+          createdAt: payment.createdAt,
+          endDate
+        };
+      })
+    );
+    
+    // Sort by creation date (newest first)
+    enhancedPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    return res.status(200).json({
+      success: true,
+      payments: enhancedPayments
+    });
   } catch (error) {
-    console.error("Error in getInvestorPaymentHistory:", error);
+    console.error("Error fetching payment history:", error);
     return res.status(500).json({
       success: false,
       message: "Error fetching payment history: " + (error.message || "Unknown error")
+    });
+  }
+};
+
+// Admin: Create a new subscription plan
+exports.createPlan = async (req, res) => {
+  try {
+    const { name, duration, price, description, features, planType } = req.body;
+    
+    if (!name || !duration || price === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, duration, and price are required"
+      });
+    }
+    
+    const newPlan = new SubscriptionPlan({
+      name,
+      duration,
+      price,
+      description,
+      features: features || [],
+      planType: planType || 'monthly',
+      isActive: true
+    });
+    
+    const savedPlan = await newPlan.save();
+    
+    return res.status(201).json({
+      success: true,
+      message: "Subscription plan created successfully",
+      plan: savedPlan
+    });
+    } catch (error) {
+    console.error("Error creating subscription plan:", error);
+      return res.status(500).json({
+        success: false,
+      message: "Error creating subscription plan: " + (error.message || "Unknown error")
+    });
+  }
+};
+
+// Admin: Update a subscription plan
+exports.updatePlan = async (req, res) => {
+  try {
+    const { planId } = req.params;
+    const { name, duration, price, description, features, planType, isActive } = req.body;
+    
+    const plan = await SubscriptionPlan.findById(planId);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription plan not found"
+      });
+    }
+    
+    // Update fields if provided
+    if (name !== undefined) plan.name = name;
+    if (duration !== undefined) plan.duration = duration;
+    if (price !== undefined) plan.price = price;
+    if (description !== undefined) plan.description = description;
+    if (features !== undefined) plan.features = features;
+    if (planType !== undefined) plan.planType = planType;
+    if (isActive !== undefined) plan.isActive = isActive;
+    
+    const updatedPlan = await plan.save();
+    
+        return res.status(200).json({
+          success: true,
+      message: "Subscription plan updated successfully",
+      plan: updatedPlan
+    });
+  } catch (error) {
+    console.error("Error updating subscription plan:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error updating subscription plan: " + (error.message || "Unknown error")
+    });
+  }
+};
+
+// Admin: Delete a subscription plan
+exports.deletePlan = async (req, res) => {
+  try {
+    const { planId } = req.params;
+    
+    const plan = await SubscriptionPlan.findById(planId);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription plan not found"
+      });
+    }
+    
+    // Check if plan is in use by any active subscriptions
+    const activeSubscriptions = await InvestorSubscription.find({
+      plan: planId,
+      isActive: true
+    });
+    
+    if (activeSubscriptions.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete plan that has active subscriptions",
+        activeSubscriptionsCount: activeSubscriptions.length
+      });
+    }
+    
+    // Instead of deleting, just mark as inactive
+    plan.isActive = false;
+    await plan.save();
+      
+      return res.status(200).json({
+        success: true,
+      message: "Subscription plan deactivated successfully"
+      });
+    } catch (error) {
+    console.error("Error deleting subscription plan:", error);
+      return res.status(500).json({
+        success: false,
+      message: "Error deleting subscription plan: " + (error.message || "Unknown error")
+    });
+  }
+};
+
+// Add this new function to check and refresh subscription status
+exports.refreshSubscriptionStatus = async (req, res) => {
+  try {
+    const { investorId } = req.params;
+    console.log(`Refreshing subscription status for investor ID: ${investorId}`);
+    
+    // Validate investor ID
+    if (!investorId || !mongoose.Types.ObjectId.isValid(investorId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid investor ID'
+      });
+    }
+    
+    // Initialize diagnostic information
+    const diagnostics = {
+      lookupMethod: 'Direct InvestorSubscription query',
+      updates: []
+    };
+    
+    // PRIMARY APPROACH: Directly query the InvestorSubscription model
+    // Find active subscription with this investor ID
+    let subscription = await InvestorSubscription.findOne({ 
+      investor: investorId,
+      isActive: true 
+    }).populate('plan').sort({ createdAt: -1 });
+    
+    if (subscription) {
+      console.log(`Found active subscription directly with investor ID: ${subscription._id}`);
+      diagnostics.directQuery = { found: true, subscriptionId: subscription._id };
+    } else {
+      diagnostics.directQuery = { found: false };
+    }
+    
+    // If no subscription found with direct ID, collect all possible related IDs
+    const possibleIds = [investorId]; // Always include the original ID
+    let user = null;
+    let investorUser = null;
+    
+    // Check if this is a User ID
+    user = await User.findById(investorId);
+    if (user) {
+      diagnostics.user = {
+        id: user._id,
+        email: user.email,
+        userType: user.userType,
+        investorDetailsId: user.investorDetailsId || null
+      };
+      
+      // Add investorDetailsId if it exists
+      if (user.investorDetailsId) {
+        investorUser = await InvestorUser.findById(user.investorDetailsId);
+        if (investorUser) {
+          possibleIds.push(user.investorDetailsId);
+          diagnostics.investorDetails = {
+            id: investorUser._id,
+            email: investorUser.investoremail,
+            userId: investorUser.userId || null
+          };
+          console.log(`Added investorDetailsId from User: ${user.investorDetailsId}`);
+        }
+      }
+      
+      // Try to find InvestorUser by email if not found by ID
+      if (!investorUser && user.email) {
+        investorUser = await InvestorUser.findOne({ investoremail: user.email });
+        if (investorUser) {
+          possibleIds.push(investorUser._id);
+          console.log(`Added InvestorUser found by email: ${investorUser._id}`);
+          diagnostics.investorDetails = {
+            id: investorUser._id,
+            email: investorUser.investoremail,
+            userId: investorUser.userId || null,
+            note: "Found by email"
+          };
+          
+          // Link User and InvestorUser if not already linked
+          if (!user.investorDetailsId) {
+            user.investorDetailsId = investorUser._id;
+            await user.save();
+            diagnostics.updates.push(`Linked User ${user._id} to InvestorDetails ${investorUser._id}`);
+          }
+          
+          if (!investorUser.userId) {
+            investorUser.userId = user._id;
+            await investorUser.save();
+            diagnostics.updates.push(`Linked InvestorDetails ${investorUser._id} to User ${user._id}`);
+          }
+        }
+      }
+    } 
+    // If not a User ID, check if it's an InvestorUser ID
+    else {
+      investorUser = await InvestorUser.findById(investorId);
+      if (investorUser) {
+        diagnostics.investorDetails = {
+          id: investorUser._id,
+          email: investorUser.investoremail,
+          userId: investorUser.userId || null
+        };
+        
+        // Add userId if it exists
+        if (investorUser.userId) {
+          user = await User.findById(investorUser.userId);
+          if (user) {
+            possibleIds.push(user._id);
+            diagnostics.user = {
+              id: user._id,
+              email: user.email,
+              userType: user.userType,
+              investorDetailsId: user.investorDetailsId || null
+            };
+            console.log(`Added userId from InvestorUser: ${user._id}`);
+          }
+        }
+        
+        // Try to find User by email if not found by ID
+        if (!user && investorUser.investoremail) {
+          user = await User.findOne({ email: investorUser.investoremail });
+          if (user) {
+            possibleIds.push(user._id);
+            console.log(`Added User found by email: ${user._id}`);
+            diagnostics.user = {
+              id: user._id,
+              email: user.email,
+              userType: user.userType,
+              investorDetailsId: user.investorDetailsId || null,
+              note: "Found by email"
+            };
+            
+            // Link User and InvestorUser if not already linked
+            if (!user.investorDetailsId) {
+              user.investorDetailsId = investorUser._id;
+              await user.save();
+              diagnostics.updates.push(`Linked User ${user._id} to InvestorDetails ${investorUser._id}`);
+            }
+            
+            if (!investorUser.userId) {
+              investorUser.userId = user._id;
+              await investorUser.save();
+              diagnostics.updates.push(`Linked InvestorDetails ${investorUser._id} to User ${user._id}`);
+            }
+          }
+        }
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: 'Neither User nor InvestorDetails found with this ID',
+          investorId
+        });
+      }
+    }
+    
+    console.log(`Searching for subscription with possible IDs:`, possibleIds);
+    diagnostics.possibleIds = possibleIds;
+    
+    // If we don't have a subscription yet, try finding with all possible IDs
+    if (!subscription && possibleIds.length > 1) {
+      diagnostics.lookupMethod = 'Related IDs InvestorSubscription query';
+      
+      subscription = await InvestorSubscription.findOne({ 
+        investor: { $in: possibleIds },
+        isActive: true 
+      }).populate('plan').sort({ createdAt: -1 });
+      
+      if (subscription) {
+        console.log(`Found subscription via related ID: ${subscription.investor}`);
+        diagnostics.relatedQuery = { found: true, subscriptionId: subscription._id };
+      } else {
+        diagnostics.relatedQuery = { found: false };
+      }
+    }
+    
+    if (subscription) {
+      // Calculate days remaining and check if expired
+      const now = new Date();
+      const endDate = new Date(subscription.endDate);
+      const daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+      const isExpired = now > endDate;
+      
+      // If subscription is expired but still marked as active, update its status
+      if (isExpired && subscription.isActive) {
+        subscription.isActive = false;
+        subscription.status = 'expired';
+        await subscription.save();
+        diagnostics.updates.push("Updated expired subscription status");
+      }
+      
+      // Update User and InvestorUser models if needed
+      if (user && user.currentSubscription !== subscription._id) {
+        user.currentSubscription = subscription._id;
+        await user.save();
+        diagnostics.updates.push(`Updated User ${user._id} with subscription ${subscription._id}`);
+      }
+      
+      if (investorUser && investorUser.currentSubscription !== subscription._id) {
+        investorUser.currentSubscription = subscription._id;
+        await investorUser.save();
+        diagnostics.updates.push(`Updated InvestorDetails ${investorUser._id} with subscription ${subscription._id}`);
+      }
+      
+      // Return the subscription with days remaining and expiry status
+      return res.status(200).json({
+        success: true,
+        message: 'Subscription status refreshed',
+        diagnostics,
+        subscription,
+        daysRemaining: Math.max(0, daysRemaining),
+        isExpired,
+        updatesApplied: diagnostics.updates.length > 0
+      });
+    }
+    
+    // If no subscription found, look for recent inactive ones
+    const recentInactiveSubscription = await InvestorSubscription.findOne({ 
+      investor: { $in: possibleIds }
+    }).populate('plan').sort({ createdAt: -1 });
+    
+    if (recentInactiveSubscription) {
+      diagnostics.inactiveSubscription = {
+        found: true,
+        id: recentInactiveSubscription._id,
+        status: recentInactiveSubscription.status,
+        isActive: recentInactiveSubscription.isActive,
+        endDate: recentInactiveSubscription.endDate
+      };
+    }
+    
+    return res.status(200).json({
+      success: false,
+      message: 'No active subscription found after refresh',
+      diagnostics
+    });
+  } catch (error) {
+    console.error('Error refreshing subscription status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error refreshing subscription status: ' + (error.message || 'Unknown error')
     });
   }
 }; 
