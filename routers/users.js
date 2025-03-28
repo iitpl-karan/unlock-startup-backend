@@ -9,7 +9,7 @@ router.post("/user-login", usersController.userLogin);
 router.get("/get-all-users", usersController.getAllUsers);
 
 router.get("/get-all-users-pagination", usersController.getAllUsersPagination);
-
+router.get("/get-investor-users-pagination", usersController.getInvestorUsersPagination);
 router.get("/get-business-users-pagination", usersController.getBusinessUsersPagination);
 
 router.get("/get-normal-users-pagination", usersController.getNormalUserPaginaion);

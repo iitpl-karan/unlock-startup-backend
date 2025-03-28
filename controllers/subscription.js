@@ -1204,36 +1204,58 @@ exports.getInvestorPaymentHistory = async (req, res) => {
 // Admin: Create a new subscription plan
 exports.createPlan = async (req, res) => {
   try {
+    console.log('Creating subscription plan with data:', req.body);
     const { name, duration, price, description, features, planType } = req.body;
     
     if (!name || !duration || price === undefined) {
+      console.log('Validation failed: Missing required fields');
       return res.status(400).json({
         success: false,
         message: "Name, duration, and price are required"
       });
     }
     
+    // Validate that duration is a positive number
+    if (isNaN(parseFloat(duration)) || parseFloat(duration) <= 0) {
+      console.log('Validation failed: Duration must be a positive number');
+      return res.status(400).json({
+        success: false,
+        message: "Duration must be a positive number"
+      });
+    }
+
+    // Validate that price is a non-negative number
+    if (isNaN(parseFloat(price)) || parseFloat(price) < 0) {
+      console.log('Validation failed: Price must be a non-negative number');
+      return res.status(400).json({
+        success: false,
+        message: "Price must be a non-negative number"
+      });
+    }
+    
     const newPlan = new SubscriptionPlan({
       name,
-      duration,
-      price,
+      duration: parseFloat(duration),
+      price: parseFloat(price),
       description,
       features: features || [],
       planType: planType || 'monthly',
       isActive: true
     });
     
+    console.log('Saving new subscription plan');
     const savedPlan = await newPlan.save();
+    console.log('Plan saved successfully:', savedPlan);
     
     return res.status(201).json({
       success: true,
       message: "Subscription plan created successfully",
       plan: savedPlan
     });
-    } catch (error) {
+  } catch (error) {
     console.error("Error creating subscription plan:", error);
-      return res.status(500).json({
-        success: false,
+    return res.status(500).json({
+      success: false,
       message: "Error creating subscription plan: " + (error.message || "Unknown error")
     });
   }
@@ -1242,12 +1264,25 @@ exports.createPlan = async (req, res) => {
 // Admin: Update a subscription plan
 exports.updatePlan = async (req, res) => {
   try {
+    console.log('Updating subscription plan with ID:', req.params.planId);
+    console.log('Update data:', req.body);
+    
     const { planId } = req.params;
     const { name, duration, price, description, features, planType, isActive } = req.body;
+    
+    // Validate the planId
+    if (!planId || !mongoose.Types.ObjectId.isValid(planId)) {
+      console.log('Invalid planId:', planId);
+      return res.status(400).json({
+        success: false,
+        message: "Invalid plan ID format"
+      });
+    }
     
     const plan = await SubscriptionPlan.findById(planId);
     
     if (!plan) {
+      console.log('Plan not found with ID:', planId);
       return res.status(404).json({
         success: false,
         message: "Subscription plan not found"
@@ -1256,17 +1291,42 @@ exports.updatePlan = async (req, res) => {
     
     // Update fields if provided
     if (name !== undefined) plan.name = name;
-    if (duration !== undefined) plan.duration = duration;
-    if (price !== undefined) plan.price = price;
+    
+    if (duration !== undefined) {
+      // Validate that duration is a positive number
+      const durationValue = parseFloat(duration);
+      if (isNaN(durationValue) || durationValue <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Duration must be a positive number"
+        });
+      }
+      plan.duration = durationValue;
+    }
+    
+    if (price !== undefined) {
+      // Validate that price is a non-negative number
+      const priceValue = parseFloat(price);
+      if (isNaN(priceValue) || priceValue < 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Price must be a non-negative number"
+        });
+      }
+      plan.price = priceValue;
+    }
+    
     if (description !== undefined) plan.description = description;
     if (features !== undefined) plan.features = features;
     if (planType !== undefined) plan.planType = planType;
     if (isActive !== undefined) plan.isActive = isActive;
     
+    console.log('Saving updated subscription plan');
     const updatedPlan = await plan.save();
+    console.log('Plan updated successfully:', updatedPlan);
     
-        return res.status(200).json({
-          success: true,
+    return res.status(200).json({
+      success: true,
       message: "Subscription plan updated successfully",
       plan: updatedPlan
     });
@@ -1284,8 +1344,8 @@ exports.deletePlan = async (req, res) => {
   try {
     const { planId } = req.params;
     
+    // Check if plan exists
     const plan = await SubscriptionPlan.findById(planId);
-    
     if (!plan) {
       return res.status(404).json({
         success: false,
@@ -1293,32 +1353,35 @@ exports.deletePlan = async (req, res) => {
       });
     }
     
-    // Check if plan is in use by any active subscriptions
-    const activeSubscriptions = await InvestorSubscription.find({
+    // Check if there are active subscriptions using this plan
+    const activeSubscriptions = await InvestorSubscription.countDocuments({
       plan: planId,
       isActive: true
     });
     
-    if (activeSubscriptions.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Cannot delete plan that has active subscriptions",
-        activeSubscriptionsCount: activeSubscriptions.length
-      });
-    }
-    
-    // Instead of deleting, just mark as inactive
-    plan.isActive = false;
-    await plan.save();
+    if (activeSubscriptions > 0) {
+      // Instead of deleting, mark as inactive
+      plan.isActive = false;
+      await plan.save();
       
       return res.status(200).json({
         success: true,
-      message: "Subscription plan deactivated successfully"
+        message: "Plan marked as inactive. Cannot delete plan with active subscriptions.",
+        planStatus: "inactive"
       });
-    } catch (error) {
+    }
+    
+    // If no active subscriptions, delete the plan
+    await SubscriptionPlan.findByIdAndDelete(planId);
+    
+    return res.status(200).json({
+      success: true,
+      message: "Subscription plan deleted successfully"
+    });
+  } catch (error) {
     console.error("Error deleting subscription plan:", error);
-      return res.status(500).json({
-        success: false,
+    return res.status(500).json({
+      success: false,
       message: "Error deleting subscription plan: " + (error.message || "Unknown error")
     });
   }

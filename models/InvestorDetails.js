@@ -15,6 +15,8 @@ const InvestorUser = new Schema({
   userType: { type: String, default: "Investor" }, // "Individual/startup", "Company", "admin"
   terms: { type: Boolean, default: false },
   netWorth: { type: String, default: '' },
+  responseTime: { type: String, default: '' },
+  fundingAmount: { type: String, default: '' },
   investorImage: { type: String, default: '/assets/images/investor/Investor-item1.webp' },
   // Company Details
   companyDetails: {

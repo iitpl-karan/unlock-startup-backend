@@ -5,6 +5,11 @@ const subscriptionController = require('../controllers/subscription');
 // Get all subscription plans
 router.get("/plans", subscriptionController.getAllPlans);
 
+// Admin routes for managing subscription plans
+router.post("/create-plan", subscriptionController.createPlan);
+router.patch("/update-plan/:planId", subscriptionController.updatePlan);
+router.delete("/delete-plan/:planId", subscriptionController.deletePlan);
+
 // Create subscription order
 router.post("/create-order", subscriptionController.createSubscriptionOrder);
 
@@ -26,11 +31,7 @@ router.get("/refresh-status/:investorId", subscriptionController.refreshSubscrip
 // Get investor's payment history
 router.get("/payment-history/:investorId", subscriptionController.getInvestorPaymentHistory);
 
-// Admin routes
-router.get("/admin/plans", subscriptionController.getAllPlans);
-router.post("/admin/plans", subscriptionController.createPlan);
-router.put("/admin/plans/:planId", subscriptionController.updatePlan);
-router.delete("/admin/plans/:planId", subscriptionController.deletePlan);
+// Admin routes - these are additional admin-specific endpoints
 router.get("/admin/subscriptions", subscriptionController.getAllSubscriptions);
 
 // Public webhook for Razorpay

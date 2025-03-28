@@ -6,10 +6,15 @@ exports.getAllGeneralData = async (req, res) => {
 
     console.log(req.query, "Data")
 
-
     try {
         if (isAdmin === true || isAdmin === 'true') {
-            const result = await GeneralSettings.find().populate('priceId')
+            const result = await GeneralSettings.find().populate({
+                path: 'priceId',
+                populate: {
+                    path: 'investorSubscriptionPlans',
+                    model: 'SubscriptionPlan'
+                }
+            });
             return res.status(200).json(result[0]);
         } else {
             res.status(403).json({
@@ -22,53 +27,58 @@ exports.getAllGeneralData = async (req, res) => {
     }
 };
 
-
-
 exports.addorUpdateGeneralData = async (req, res) => {
     console.log('dfhjk');
     try {
-        const { timezone, currency, address, sitetitle, Tax, cin, pin , gst, slogan, EventPrize, StartupChallegeprize, PrimiumChallegeprize, adminemail, admincontactno, whatsappno, isAdmin, facebookurl, instagramurl, twitterurl, linkedinurl, currentDate } = req.body;
+        const { timezone, currency, address, sitetitle, Tax, cin, pin, gst, slogan, EventPrize, StartupChallegeprize, PrimiumChallegeprize, adminemail, admincontactno, whatsappno, isAdmin, facebookurl, instagramurl, twitterurl, linkedinurl, currentDate, investorSubscriptionPlans } = req.body;
 
         if (isAdmin === true || isAdmin === 'true') {
-            const updateFields = {
-                sitetitle,
-                slogan,
-                adminemail,
-                admincontactno,
-                whatsappno,
-                facebookurl,
-                instagramurl,
-                twitterurl,
-                linkedinurl,
-                timezone,
-                currency,
-                cin,
-                gst,
-                pin,
-                address,
-                updatedAt: currentDate
-            };
-
-            // Add logo and favicon to the update object if they are present in req.files
-            if (req.files.logo) {
-                const logo = req.files.logo[0];
-                updateFields.logo = logo.filename;
-            }
-            if (req.files.favicon) {
-                const favicon = req.files.favicon[0];
-                updateFields.favicon = favicon.filename;
+            // Prepare price fields
+            let priceFields = {};
+            if (PrimiumChallegeprize) priceFields.PrimiumChallegeprize = PrimiumChallegeprize;
+            if (EventPrize) priceFields.EventPrize = EventPrize;
+            if (StartupChallegeprize) priceFields.StartupChallegeprize = StartupChallegeprize;
+            if (Tax) priceFields.Tax = Tax;
+            
+            // Add investor subscription plans if provided
+            if (investorSubscriptionPlans) {
+                // Convert to array if it's a string (from FormData)
+                let planIds = investorSubscriptionPlans;
+                if (typeof investorSubscriptionPlans === 'string') {
+                    try {
+                        planIds = JSON.parse(investorSubscriptionPlans);
+                    } catch (e) {
+                        // If not valid JSON, split by comma
+                        planIds = investorSubscriptionPlans.split(',').map(id => id.trim());
+                    }
+                }
+                priceFields.investorSubscriptionPlans = planIds;
             }
 
-            // Update Price model
-            const priceFields = {
-                EventPrize,
-                StartupChallegeprize,
-                PrimiumChallegeprize,
-                Tax
-            };
+            // Prepare general settings fields
+            let updateFields = {};
+            if (req.files?.logo) updateFields.logo = req.files.logo[0].filename;
+            if (req.files?.favicon) updateFields.favicon = req.files.favicon[0].filename;
+            if (sitetitle) updateFields.sitetitle = sitetitle;
+            if (slogan) updateFields.slogan = slogan;
+            if (adminemail) updateFields.adminemail = adminemail;
+            if (admincontactno) updateFields.admincontactno = admincontactno;
+            if (whatsappno) updateFields.whatsappno = whatsappno;
+            if (currency) updateFields.currency = currency;
+            if (timezone) updateFields.timezone = timezone;
+            if (address) updateFields.address = address;
+            if (currency) updateFields.currency = currency;
+            if (cin) updateFields.cin = cin;
+            if (gst) updateFields.gst = gst;
+            if (pin) updateFields.pin = pin;
+            if (facebookurl) updateFields.facebookurl = facebookurl;
+            if (instagramurl) updateFields.instagramurl = instagramurl;
+            if (twitterurl) updateFields.twitterurl = twitterurl;
+            if (linkedinurl) updateFields.linkedinurl = linkedinurl;
 
-            let priceId;
+            // Check if Pricemodel already exists
             const priceDocument = await Pricemodel.find();
+            let priceId;
 
             if (priceDocument.length === 0) {
                 // No document exists, create a new one
@@ -113,7 +123,7 @@ exports.addorUpdateGeneralData = async (req, res) => {
         }
 
     } catch (err) {
-        console.log(err);
-        return res.status(500).json({ message: "Internal server error" });
+        console.log("Error updating settings:", err);
+        res.status(500).json({ message: "Internal server error", error: err.message });
     }
-}
+};

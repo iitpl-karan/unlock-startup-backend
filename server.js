@@ -49,7 +49,7 @@ app.use(cookieParser());
 
 app.use(cors({
   origin: '*',  // Allows requests from any origin
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true // Allow cookies and authorization headers
 }));

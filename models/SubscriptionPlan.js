@@ -27,7 +27,7 @@ const SubscriptionPlanSchema = new Schema({
   },
   planType: { 
     type: String, 
-    enum: ['monthly', 'yearly'], 
+    enum: ['weekly', 'monthly', 'yearly'], 
     default: 'monthly' 
   },
   createdAt: { 

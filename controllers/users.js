@@ -768,6 +768,38 @@ exports.getBusinessUsersPagination = async (req, res) => {
   }
 };
 
+exports.getInvestorUsersPagination = async (req, res) => {
+  try {
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    const skip = (page - 1) * limit;
+
+    const users = await Users.find({ userType: "Investor" })
+      .populate('companyDetailsId userDetailsId')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+  console.log(users, "fdsfsdfsdfasf");
+    const totalUser = await Users.countDocuments({ userType: "Investor" });
+
+    res.status(200).json(
+      {
+        data: users,
+        meta_data: {
+          total_data: totalUser,
+          current_page: page,
+          data_limit: limit,
+          total_pages: Math.ceil(totalUser / limit),
+        },
+      });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 
 exports.getNormalUserPaginaion = async (req, res) => {
   try {

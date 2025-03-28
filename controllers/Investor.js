@@ -310,7 +310,9 @@ exports.updateInvestorProfile = async (req, res) => {
             phoneNumber,
             isPhonePublic,
             isEmailPublic,
-            website
+            website,
+            responseTime,
+            fundingAmount
         } = req.body;
 
         console.log("Extracted data:", {
@@ -320,7 +322,9 @@ exports.updateInvestorProfile = async (req, res) => {
             phoneNumber,
             isPhonePublic,
             isEmailPublic,
-            website
+            website,
+            responseTime,
+            fundingAmount
         });
 
         // Parse JSON strings back to objects
@@ -395,6 +399,8 @@ exports.updateInvestorProfile = async (req, res) => {
             isPhonePublic: isPhonePublic !== undefined ? isPhonePublic : investor.isPhonePublic,
             isEmailPublic: isEmailPublic !== undefined ? isEmailPublic : investor.isEmailPublic,
             website: website || investor.website,
+            responseTime: responseTime || investor.responseTime,
+            fundingAmount: fundingAmount || investor.fundingAmount,
             // Also update the company field with the company name from companyDetails
             company: companyDetails.fullName || investor.company,
             // Also update the investorType field with the type from investorDetails  
