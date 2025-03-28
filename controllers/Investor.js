@@ -474,7 +474,9 @@ exports.getAllInvestors = async (req, res) => {
         investorDetails: 1,
         aboutUs: 1,
         industerytype: 1,
-        userType: 1
+        userType: 1,
+        responseTime: 1,
+        fundingAmount: 1,
       });
 
     return res.status(200).json({
