@@ -678,209 +678,53 @@ exports.getInvestorSubscription = async (req, res) => {
         console.log(`InvestorUser has currentSubscription: ${directSubscriptionId}`);
       }
     }
-    
-    // If we don't have a directSubscriptionId yet, check if this is a User ID
-    if (!directSubscriptionId) {
-      user = await User.findById(investorId);
-      if (user) {
-        console.log(`Found User with ID ${investorId}`);
-        
-        // Check if the User has a currentSubscription ID
-        if (user.currentSubscription) {
-          directSubscriptionId = user.currentSubscription;
-          console.log(`User has currentSubscription: ${directSubscriptionId}`);
-        }
-        
-        // If user has investorDetailsId, check that too for currentSubscription
-        if (!directSubscriptionId && user.investorDetailsId) {
-          investorUser = await InvestorUser.findById(user.investorDetailsId);
-          if (investorUser && investorUser.currentSubscription) {
-            directSubscriptionId = investorUser.currentSubscription;
-            console.log(`Found subscription ID from linked InvestorUser: ${directSubscriptionId}`);
-          }
-        }
-      }
-    }
-    
-    // If we found a direct subscription ID, use that to find the subscription
+
+    // Find the subscription
     let subscription = null;
-    let lookupMethod = '';
-    
+    let lookupMethod = 'Direct subscription lookup';
+
     if (directSubscriptionId) {
-      console.log(`Looking up subscription directly by ID: ${directSubscriptionId}`);
       subscription = await InvestorSubscription.findById(directSubscriptionId).populate('plan');
-      
-      if (subscription) {
-        console.log(`Found subscription by direct ID lookup: ${subscription._id}`);
-        lookupMethod = 'Direct currentSubscription field lookup';
-      } else {
-        console.log(`Subscription with ID ${directSubscriptionId} not found, will try other methods`);
-      }
+      console.log('Found subscription by direct ID:', subscription);
     }
-    
-    // If we didn't find a subscription by ID, try the previous methods
+
+    // If no subscription found by direct ID, try finding the most recent active one
     if (!subscription) {
-      // PRIMARY APPROACH: Directly query the InvestorSubscription model
-      // This is our main lookup method since the subscription's investor field
-      // is the most reliable way to find a subscription
-      
-      // Find active subscription with this investor ID
-      subscription = await InvestorSubscription.findOne({ 
+      subscription = await InvestorSubscription.findOne({
         investor: investorId,
-        isActive: true 
+        isActive: true
       }).populate('plan').sort({ createdAt: -1 });
-      
-      lookupMethod = 'Direct InvestorSubscription query';
-      
-      // If no subscription found with the direct ID, we need to try other IDs
-      if (!subscription) {
-        console.log(`No subscription found directly with ID: ${investorId}, trying to find related IDs`);
-        
-        // Find user and investor details to get all possible investor IDs
-        if (!user) user = await User.findById(investorId);
-        if (!investorUser && investorId !== user?.investorDetailsId) {
-          investorUser = user?.investorDetailsId 
-            ? await InvestorUser.findById(user.investorDetailsId) 
-            : null;
-        }
-        let possibleIds = [investorId]; // Always include the original ID
-        
-        // If this is a User ID
-        if (user) {
-          console.log(`Found user with ID ${investorId}`);
-          
-          // Add investorDetailsId if it exists
-          if (user.investorDetailsId) {
-            if (!investorUser) {
-              investorUser = await InvestorUser.findById(user.investorDetailsId);
-            }
-            if (investorUser) {
-              possibleIds.push(user.investorDetailsId);
-              console.log(`Added investorDetailsId: ${user.investorDetailsId}`);
-            }
-          }
-          
-          // Try to find InvestorUser by email if not found by ID
-          if (!investorUser && user.email) {
-            investorUser = await InvestorUser.findOne({ investoremail: user.email });
-            if (investorUser) {
-              possibleIds.push(investorUser._id);
-              console.log(`Added InvestorUser found by email: ${investorUser._id}`);
-              
-              // Update relationship if needed
-              if (!user.investorDetailsId) {
-                user.investorDetailsId = investorUser._id;
-                await user.save();
-                console.log(`Updated User with investorDetailsId: ${investorUser._id}`);
-              }
-            }
-          }
-        } 
-        // If this is an InvestorUser ID
-        else {
-          if (!investorUser) {
-            investorUser = await InvestorUser.findById(investorId);
-          }
-          if (investorUser) {
-            console.log(`Found InvestorUser with ID ${investorId}`);
-            
-            // Add userId if it exists
-            if (investorUser.userId) {
-              const linkedUser = await User.findById(investorUser.userId);
-              if (linkedUser) {
-                possibleIds.push(linkedUser._id);
-                console.log(`Added linked userId: ${linkedUser._id}`);
-              }
-            }
-            
-            // Try to find User by email if not found by ID
-            if (!investorUser.userId && investorUser.investoremail) {
-              const emailUser = await User.findOne({ email: investorUser.investoremail });
-              if (emailUser) {
-                possibleIds.push(emailUser._id);
-                console.log(`Added User found by email: ${emailUser._id}`);
-                
-                // Update relationship if needed
-                if (!investorUser.userId) {
-                  investorUser.userId = emailUser._id;
-                  await investorUser.save();
-                  console.log(`Updated InvestorUser with userId: ${emailUser._id}`);
-                }
-                
-                if (!emailUser.investorDetailsId) {
-                  emailUser.investorDetailsId = investorUser._id;
-                  await emailUser.save();
-                  console.log(`Updated User with investorDetailsId: ${investorUser._id}`);
-                }
-              }
-            }
-          }
-        }
-        
-        console.log(`Searching for subscription with possible IDs:`, possibleIds);
-        
-        // Search for subscriptions with any of these IDs
-        subscription = await InvestorSubscription.findOne({ 
-          investor: { $in: possibleIds },
-          isActive: true 
-        }).populate('plan').sort({ createdAt: -1 });
-        
-        if (subscription) {
-          lookupMethod = 'Related ID InvestorSubscription query';
-          console.log(`Found subscription via related ID: ${subscription.investor}`);
-        }
-      }
+      console.log('Found subscription by investor ID:', subscription);
     }
-    
-    // If we found a subscription, update the currentSubscription fields if they don't match
-    if (subscription) {
-      const updatePromises = [];
-      
-      // Update User model if needed
-      if (user && (!user.currentSubscription || !user.currentSubscription.equals(subscription._id))) {
-        user.currentSubscription = subscription._id;
-        updatePromises.push(user.save());
-        console.log(`Updated User ${user._id} with currentSubscription ${subscription._id}`);
-      }
-      
-      // Update InvestorUser model if needed
-      if (investorUser && (!investorUser.currentSubscription || !investorUser.currentSubscription.equals(subscription._id))) {
-        investorUser.currentSubscription = subscription._id;
-        updatePromises.push(investorUser.save());
-        console.log(`Updated InvestorUser ${investorUser._id} with currentSubscription ${subscription._id}`);
-      }
-      
-      // Execute any updates
-      if (updatePromises.length > 0) {
-        await Promise.all(updatePromises);
-      }
-    }
-    
-    // If we still didn't find a subscription, return appropriate response
-    if (!subscription) {
-      console.log(`No subscription found for investor ID: ${investorId}`);
-      return res.status(200).json({
-        success: false,
-        message: 'No active subscription found',
-        lookupMethod
-      });
-    }
-    
-    // We found a subscription - calculate days remaining and check if expired
+
+    // Calculate expiry status
     const now = new Date();
-    const endDate = new Date(subscription.endDate);
-    const daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
-    const isExpired = now > endDate;
-    
-    // If subscription is expired but still marked as active, update its status
-    if (isExpired && subscription.isActive) {
-      subscription.isActive = false;
-      subscription.status = 'expired';
-      await subscription.save();
-      console.log(`Updated expired subscription: ${subscription._id}`);
+    let daysRemaining = 0;
+    let isExpired = true;
+
+    if (subscription) {
+      const endDate = new Date(subscription.endDate);
+      daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+      isExpired = now > endDate;
+
+      // Check if this is a free plan
+      const isFreeplan = subscription.plan && subscription.plan.price === 0;
+      
+      // If it's a free plan and active, consider it as not expired
+      if (isFreeplan && subscription.status === 'active') {
+        isExpired = false;
+      }
+
+      // Update subscription status if expired
+      if (isExpired && subscription.isActive) {
+        subscription.isActive = false;
+        subscription.status = 'expired';
+        await subscription.save();
+        console.log(`Updated expired subscription: ${subscription._id}`);
+      }
     }
-    
-    // Return the subscription with days remaining and expiry status
+
+    // Return the subscription details
     return res.status(200).json({
       success: true,
       subscription,
@@ -888,6 +732,7 @@ exports.getInvestorSubscription = async (req, res) => {
       isExpired,
       lookupMethod
     });
+
   } catch (error) {
     console.error('Error fetching investor subscription:', error);
     return res.status(500).json({

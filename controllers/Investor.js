@@ -312,7 +312,8 @@ exports.updateInvestorProfile = async (req, res) => {
             isEmailPublic,
             website,
             responseTime,
-            fundingAmount
+            fundingAmount,
+            portfolio
         } = req.body;
 
         console.log("Extracted data:", {
@@ -324,7 +325,8 @@ exports.updateInvestorProfile = async (req, res) => {
             isEmailPublic,
             website,
             responseTime,
-            fundingAmount
+            fundingAmount,
+            portfolio
         });
 
         // Parse JSON strings back to objects
@@ -401,6 +403,7 @@ exports.updateInvestorProfile = async (req, res) => {
             website: website || investor.website,
             responseTime: responseTime || investor.responseTime,
             fundingAmount: fundingAmount || investor.fundingAmount,
+            portfolio: portfolio || investor.portfolio,
             // Also update the company field with the company name from companyDetails
             company: companyDetails.fullName || investor.company,
             // Also update the investorType field with the type from investorDetails  
@@ -477,6 +480,10 @@ exports.getAllInvestors = async (req, res) => {
         userType: 1,
         responseTime: 1,
         fundingAmount: 1,
+        portfolio: 1,
+        isPhonePublic: 1,
+        isEmailPublic: 1,
+        phoneNumber: 1
       });
 
     return res.status(200).json({
@@ -879,8 +886,17 @@ exports.updatePitchStatus = async (req, res) => {
       });
     }
 
-    // Update the pitch status
+    // Check if a message has already been sent
+    if (pitch.hasMessageSent) {
+      return res.status(400).json({
+        success: false,
+        message: "You can only send a message once for a particular pitch report."
+      });
+    }
+
+    // Update the pitch status and set hasMessageSent to true
     pitch.status = status;
+    pitch.hasMessageSent = true;
     
     // Save the reason if provided
     if (reason) {
