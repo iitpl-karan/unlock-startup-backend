@@ -41,9 +41,8 @@ const Investment = require('./routers/investment')
 const subscriptionController = require('./controllers/subscription');
 const notificationController = require('./controllers/notification');
 
-
-
-
+// Import investor pitches router
+const investorPitchRouter = require('./routers/investorPitchRouter');
 
 app.use(cookieParser());
 
@@ -104,6 +103,7 @@ app.get('/unlock/ping', (req, res) => {
 
 app.use('/unlock/api/investors', Investor)
 app.use('/unlock/api/investment', Investment)
+app.use('/unlock/api/investor-pitches', investorPitchRouter)
 
 const port = process.env.PORT || 8002;
 
