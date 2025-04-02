@@ -4,6 +4,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const InvestorPitch = require('../models/InvestorPitch');
 const nodemailer = require('nodemailer');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+const Payment = require('../models/Payment');
 
 exports.getAllInvestorType = async (req, res) => {
     try {
@@ -539,6 +542,9 @@ exports.getInvestorDetail = async (req, res) => {
 
 exports.submitPitch = async (req, res) => {
   try {
+    console.log("Submit pitch request received. Body:", req.body);
+    console.log("Files received:", req.files);
+    
     const {
       investorId,
       userId,
@@ -558,9 +564,16 @@ exports.submitPitch = async (req, res) => {
       solution_overview,
       product_description,
       fundraising_requirements,
-      use_of_funds
+      use_of_funds,
+      supporting_documents,
+      paymentId,
+      orderId,
+      paymentStatus
     } = req.body;
 
+    console.log("Extracted userId:", userId);
+    console.log("Extracted investorId:", investorId);
+    
     // Validate required fields
     if (!investorId) {
       return res.status(400).json({
@@ -570,9 +583,17 @@ exports.submitPitch = async (req, res) => {
     }
     
     if (!userId) {
+      console.error("Missing userId in request body:", req.body);
       return res.status(400).json({
         success: false,
         message: "User ID is required"
+      });
+    }
+    
+    if (!paymentId || !orderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment information is required"
       });
     }
     
@@ -607,8 +628,15 @@ exports.submitPitch = async (req, res) => {
     // Get file paths from multer
     const pitchDeckFile = req.files?.['pitch_deck']?.[0]?.path;
     const productDemoFile = req.files?.['product_demo']?.[0]?.path;
-    const supportingDocumentsFile = req.files?.['supporting_documents']?.[0]?.path;
-
+    
+    // Validate required files
+    if (!pitchDeckFile) {
+      return res.status(400).json({
+        success: false,
+        message: "Pitch deck file is required"
+      });
+    }
+    
     // Find the investor
     const investor = await InvestorUser.findById(investorId);
     if (!investor) {
@@ -625,12 +653,18 @@ exports.submitPitch = async (req, res) => {
       startupName,
       pitchDeck: pitchDeckFile,
       product_demo: productDemoFile,
-      supporting_documents: supportingDocumentsFile,
+      supporting_documents,  // Text field from req.body
       use_of_funds,
       fundingAmount: parseFloat(fundingAmount),
       equity: parseFloat(equity),
       description,
       status: 'pending',
+      // Payment information
+      payment: {
+        paymentId,
+        orderId,
+        status: paymentStatus || 'paid'
+      },
       // Additional fields
       founder_name,
       contact_email,
@@ -1096,3 +1130,138 @@ exports.getInvestorPitchStatistics = async (req, res) => {
     });
   }
 }
+
+exports.createPitchOrder = async (req, res) => {
+  try {
+    const { investorId, userId, amount } = req.body;
+    
+    // Validate inputs
+    if (!investorId || !userId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: investorId, userId, amount"
+      });
+    }
+    
+    // Create a new Razorpay instance
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_live_g1FdyUyG50U2Rq',
+      key_secret: process.env.RAZORPAY_KEY_SECRET || process.env.key_secret
+    });
+    
+    // Create a shorter timestamp to keep receipt string length under 40 characters
+    const timestamp = Date.now().toString().slice(-8);
+    
+    // Create an order with a shorter receipt string (under 40 chars)
+    const options = {
+      amount: Math.round(amount * 100), // Convert to paise/cents
+      currency: 'INR',
+      receipt: `pitch_${timestamp}`, // Shortened receipt format
+      payment_capture: 1, // Auto-capture payment
+      notes: {
+        investorId: investorId,
+        userId: userId,
+        purpose: 'Pitch Submission',
+      }
+    };
+    
+    console.log('Creating Razorpay order with options:', options);
+    
+    // Create Razorpay order
+    const order = await razorpay.orders.create(options);
+    
+    res.status(200).json({
+      success: true,
+      message: "Order created successfully",
+      order: order
+    });
+    
+  } catch (error) {
+    console.error('Error creating pitch order:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error creating order: " + (error.message || "Unknown error"),
+      error: error.message
+    });
+  }
+};
+
+exports.verifyPitchPayment = async (req, res) => {
+  try {
+    console.log('Verify pitch payment request received:', req.body);
+    
+    const { 
+      razorpay_order_id, 
+      razorpay_payment_id, 
+      razorpay_signature,
+      investorId,
+      userId
+    } = req.body;
+    
+    console.log('Extracted userId:', userId);
+    console.log('Extracted investorId:', investorId);
+    
+    if (!userId) {
+      console.error('Missing userId in verify pitch payment request');
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required for payment verification"
+      });
+    }
+    
+    if (!investorId) {
+      console.error('Missing investorId in verify pitch payment request');
+      return res.status(400).json({
+        success: false,
+        message: "Investor ID is required for payment verification"
+      });
+    }
+    
+    // Validate signature
+    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSign = crypto.createHmac("sha256", process.env.key_secret)
+      .update(sign.toString())
+      .digest("hex");
+    
+    const isAuthentic = expectedSign === razorpay_signature;
+    
+    if (!isAuthentic) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment verification failed. Invalid signature."
+      });
+    }
+    
+    // Create payment record
+    const payment = new Payment({
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      paymentfor: 'PitchSubmission',
+      amount: 300, // Fixed pitch submission amount
+      status: 'paid',
+      user: userId
+    });
+    
+    // Save payment record
+    await payment.save();
+    
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: "Payment verified successfully",
+      data: {
+        paymentId: razorpay_payment_id,
+        orderId: razorpay_order_id
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error verifying pitch payment:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error verifying payment: " + (error.message || "Unknown error"),
+      error: error.message
+    });
+  }
+};
