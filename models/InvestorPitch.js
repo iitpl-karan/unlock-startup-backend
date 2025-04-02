@@ -41,6 +41,25 @@ const InvestorPitchSchema = new Schema({
         enum: ['pending', 'accepted', 'rejected'],
         default: 'pending'
     },
+    payment: {
+        paymentId: {
+            type: String,
+            required: true
+        },
+        orderId: {
+            type: String,
+            required: true
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'paid', 'failed'],
+            default: 'pending'
+        },
+        date: {
+            type: Date,
+            default: Date.now
+        }
+    },
     founder_name: {
         type: String,
         required: true

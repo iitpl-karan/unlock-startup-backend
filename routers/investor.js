@@ -34,6 +34,10 @@ router.get('/get-investor-pitches/:investorId', InvestorController.getInvestorPi
 // New route to update pitch status
 router.patch('/update-pitch-status/:pitchId', InvestorController.updatePitchStatus);
 
+// Add pitch payment routes
+router.post("/create-pitch-order", InvestorController.createPitchOrder);
+router.post("/verify-pitch-payment", InvestorController.verifyPitchPayment);
+
 router.post("/submit-pitch", upload.fields([
     { name: 'pitch_deck', maxCount: 1 },
     { name: 'product_demo', maxCount: 1 },
