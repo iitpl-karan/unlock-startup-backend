@@ -6,8 +6,8 @@ const InvestorPitch = require('../models/InvestorPitch');
 const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const Payment = require('../models/Payment');
-
+const User = require("../models/usersModel");
+const Payment = require("../models/Payment");
 exports.getAllInvestorType = async (req, res) => {
     try {
         const result = await Investor.find()
@@ -1145,10 +1145,8 @@ exports.createPitchOrder = async (req, res) => {
     
     // Create a new Razorpay instance
     const razorpay = new Razorpay({
-      // Comment out live key and use test key instead
-      // key_id: process.env.RAZORPAY_KEY_ID || 'rzp_live_g1FdyUyG50U2Rq',
-      key_id: process.env.RAZORPAY_TEST_KEY_ID || 'rzp_test_LZNdRPjCpALttI',
-      key_secret: process.env.RAZORPAY_KEY_SECRET || process.env.key_secret
+      key_id: 'rzp_test_yihOBHENxUGcCE' || 'rzp_live_g1FdyUyG50U2Rq',
+      key_secret: 'euGkomAsZ678Jek8CIE4SxVC' || process.env.key_secret
     });
     
     // Create a shorter timestamp to keep receipt string length under 40 characters
@@ -1221,7 +1219,7 @@ exports.verifyPitchPayment = async (req, res) => {
     
     // Validate signature
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSign = crypto.createHmac("sha256", process.env.key_secret)
+    const expectedSign = crypto.createHmac("sha256", 'euGkomAsZ678Jek8CIE4SxVC')
       .update(sign.toString())
       .digest("hex");
     
@@ -1247,6 +1245,112 @@ exports.verifyPitchPayment = async (req, res) => {
     
     // Save payment record
     await payment.save();
+
+    // Get user details for the invoice
+    const user = await User.findById(userId);
+    if (!user) {
+      console.error('User not found for invoice email');
+    } else {
+      try {
+        // Create nodemailer transporter
+        let transporter = nodemailer.createTransport({
+          host: "smtp.hostinger.com",
+          port: 587,
+          secure: false,
+          auth: {
+            user: 'info@unlockstartup.com',
+            pass: 'Z2q^Hoj>K4',
+          },
+        });
+
+        // Get today's date formatted as DD/MM/YYYY
+        const today = new Date();
+        const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+        
+        // Format amount with commas and currency symbol
+        const formattedAmount = (300).toLocaleString('en-IN', {
+          maximumFractionDigits: 0,
+          style: 'currency',
+          currency: 'INR'
+        });
+
+        // Generate invoice number (you can modify this format as needed)
+        const invoiceNumber = `INV-${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}-${payment._id.toString().slice(-6)}`;
+
+        // Prepare email content with invoice
+        const mailOptions = {
+          from: 'info@unlockstartup.com',
+          to: user.email,
+          subject: 'Payment Invoice - Pitch Submission',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <img src="https://unlockstartup.com/unlock/uploads/Logo.png" alt="Unlock Startup Logo" style="max-width: 180px;">
+              </div>
+              
+              <div style="border: 1px solid #e6e6e6; padding: 20px; border-radius: 5px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                  <div>
+                    <h2 style="color: #333; margin: 0;">INVOICE</h2>
+                    <p style="color: #666; margin: 5px 0;">Invoice Number: ${invoiceNumber}</p>
+                    <p style="color: #666; margin: 5px 0;">Date: ${formattedDate}</p>
+                  </div>
+                  <div style="text-align: right;">
+                    <p style="margin: 5px 0;"><strong>Unlock Startup</strong></p>
+                    <p style="color: #666; margin: 5px 0;">contact@unlockstartup.com</p>
+                    <p style="color: #666; margin: 5px 0;">+91 9266733959</p>
+                  </div>
+                </div>
+
+                <div style="margin: 20px 0; padding: 10px 0; border-top: 1px solid #e6e6e6; border-bottom: 1px solid #e6e6e6;">
+                  <h3 style="color: #333; margin: 0 0 10px 0;">Bill To:</h3>
+                  <p style="margin: 5px 0;"><strong>${user.name || 'Valued Customer'}</strong></p>
+                  <p style="color: #666; margin: 5px 0;">${user.email}</p>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                  <tr style="background-color: #f8f9fa;">
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Description</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">Amount</th>
+                  </tr>
+                  <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #dee2e6;">Pitch Submission Fee</td>
+                    <td style="padding: 12px; text-align: right; border-bottom: 1px solid #dee2e6;">${formattedAmount}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 12px; text-align: right;"><strong>Total Amount</strong></td>
+                    <td style="padding: 12px; text-align: right;"><strong>${formattedAmount}</strong></td>
+                  </tr>
+                </table>
+
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e6e6e6;">
+                  <p style="color: #666; margin: 5px 0;"><strong>Payment Information:</strong></p>
+                  <p style="color: #666; margin: 5px 0;">Payment ID: ${razorpay_payment_id}</p>
+                  <p style="color: #666; margin: 5px 0;">Order ID: ${razorpay_order_id}</p>
+                  <p style="color: #666; margin: 5px 0;">Payment Status: Paid</p>
+                </div>
+
+                <div style="margin-top: 30px; text-align: center; color: #666;">
+                  <p style="margin: 5px 0;">Thank you for your business!</p>
+                  <p style="margin: 5px 0;">This is a computer-generated invoice and does not require a signature.</p>
+                </div>
+              </div>
+              
+              <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
+                <p>© 2024 Unlock Startup. All rights reserved.</p>
+              </div>
+            </div>
+          `,
+        };
+
+        // Send the invoice email asynchronously
+        transporter.sendMail(mailOptions).catch(emailError => {
+          console.error('Error sending invoice email:', emailError);
+        });
+      } catch (emailError) {
+        console.error('Error setting up invoice email:', emailError);
+      }
+    }
     
     // Return success response
     res.status(200).json({

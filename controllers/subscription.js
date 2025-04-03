@@ -1709,4 +1709,64 @@ exports.linkSubscriptionToUser = async (req, res) => {
       message: 'Error linking subscription to user: ' + (error.message || 'Unknown error')
     });
   }
+};
+
+// Get all payments for admin panel
+exports.getAllPayments = async (req, res) => {
+  try {
+    // Fetch all payments and populate user information
+    const payments = await Payment.find()
+      .populate('user', 'name email')
+      .populate('subscription', 'plan endDate')
+      .sort({ createdAt: -1 });
+
+    // Enhance payment records with additional information
+    const enhancedPayments = await Promise.all(
+      payments.map(async payment => {
+        let planName = 'N/A';
+        let planType = 'N/A';
+        let endDate = null;
+
+        try {
+          if (payment.subscription) {
+            const subscription = payment.subscription;
+            if (subscription.plan && typeof subscription.plan === 'object') {
+              planName = subscription.plan.name;
+              planType = subscription.plan.planType;
+            }
+            endDate = subscription.endDate;
+          }
+        } catch (error) {
+          console.log('Error getting plan details for payment:', error);
+        }
+
+        return {
+          _id: payment._id,
+          payment_id: payment.payment_id || payment.razorpay_payment_id,
+          order_id: payment.order_id || payment.razorpay_order_id,
+          user: payment.user,
+          amount: payment.amount,
+          status: payment.status,
+          paymentType: payment.paymentType,
+          method: payment.method,
+          description: payment.description,
+          planName,
+          planType,
+          endDate,
+          createdAt: payment.createdAt
+        };
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      payments: enhancedPayments
+    });
+  } catch (error) {
+    console.error("Error fetching all payments:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching payments: " + (error.message || "Unknown error")
+    });
+  }
 }; 

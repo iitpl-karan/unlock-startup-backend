@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const subscriptionController = require('../controllers/subscription');
+const userAuth = require('../middlewares/userAuth');
 
 // Get all subscription plans
 router.get("/plans", subscriptionController.getAllPlans);
@@ -32,7 +33,8 @@ router.get("/refresh-status/:investorId", subscriptionController.refreshSubscrip
 router.get("/payment-history/:investorId", subscriptionController.getInvestorPaymentHistory);
 
 // Admin routes - these are additional admin-specific endpoints
-router.get("/admin/subscriptions", subscriptionController.getAllSubscriptions);
+router.get("/admin/subscriptions", userAuth, subscriptionController.getAllSubscriptions);
+router.get("/admin/payments", userAuth, subscriptionController.getAllPayments);
 
 // Public webhook for Razorpay
 router.post("/razorpay-webhook", subscriptionController.RazorpayResponse);
