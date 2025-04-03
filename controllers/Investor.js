@@ -1145,7 +1145,9 @@ exports.createPitchOrder = async (req, res) => {
     
     // Create a new Razorpay instance
     const razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_live_g1FdyUyG50U2Rq',
+      // Comment out live key and use test key instead
+      // key_id: process.env.RAZORPAY_KEY_ID || 'rzp_live_g1FdyUyG50U2Rq',
+      key_id: process.env.RAZORPAY_TEST_KEY_ID || 'rzp_test_LZNdRPjCpALttI',
       key_secret: process.env.RAZORPAY_KEY_SECRET || process.env.key_secret
     });
     
