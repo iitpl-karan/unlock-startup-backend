@@ -68,6 +68,7 @@ require("./config/db");
 // Both of these configurations are needed for compatibility with different URL formats
 app.use('/uploads', express.static("public/uploads"));
 app.use('/unlock/uploads', express.static("public/uploads"));
+app.use('/unlock/public/uploads', express.static("public/uploads"));
 
 // routes
 app.use('/unlock/api/startup-challenges', startupChallengesRouter)
