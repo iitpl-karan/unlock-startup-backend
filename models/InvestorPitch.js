@@ -41,6 +41,10 @@ const InvestorPitchSchema = new Schema({
         enum: ['pending', 'accepted', 'rejected'],
         default: 'pending'
     },
+    isInHistory: {
+        type: Boolean,
+        default: false
+    },
     hasMessageSent: {
         type: Boolean,
         default: false

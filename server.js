@@ -25,6 +25,7 @@ const ChallengeRegistration = require('./routers/startupchallengeRegistration')
 const eventsRegistrationRouter = require('./routers/eventRegistrartion')
 const subscriptionRouter = require('./routers/subscription')
 const notificationRouter = require('./routers/notificationRoutes')
+const investorDropdownRouter = require('./routes/investorDropdown');
 const { saveChallengesToDatabase } = require('./utils/DummyChallenges');
 const { saveEventsToDatabase } = require("./utils/DummyEvent");
 const saveData = require("./config/addlocation");
@@ -104,6 +105,7 @@ app.get('/unlock/ping', (req, res) => {
 app.use('/unlock/api/investors', Investor)
 app.use('/unlock/api/investment', Investment)
 app.use('/unlock/api/investor-pitches', investorPitchRouter)
+app.use('/unlock/api/investor-dropdown', investorDropdownRouter)
 
 const port = process.env.PORT || 8002;
 

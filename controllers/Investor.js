@@ -1145,8 +1145,8 @@ exports.createPitchOrder = async (req, res) => {
     
     // Create a new Razorpay instance
     const razorpay = new Razorpay({
-      key_id: 'rzp_live_g1FdyUyG50U2Rq' || 'rzp_live_g1FdyUyG50U2Rq',
-      key_secret: 'R51PWtCFLwq2exPJ85QaCKSK' || process.env.key_secret
+      key_id: 'rzp_test_LHVztjvE6284Fc' || 'rzp_live_g1FdyUyG50U2Rq',
+      key_secret: 'rPadlUmDez0bzOJVdstU0vpy' || process.env.key_secret
     });
     
     // Create a shorter timestamp to keep receipt string length under 40 characters
@@ -1219,7 +1219,7 @@ exports.verifyPitchPayment = async (req, res) => {
     
     // Validate signature
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSign = crypto.createHmac("sha256", 'R51PWtCFLwq2exPJ85QaCKSK')
+    const expectedSign = crypto.createHmac("sha256", 'rPadlUmDez0bzOJVdstU0vpy')
       .update(sign.toString())
       .digest("hex");
     
@@ -1367,6 +1367,66 @@ exports.verifyPitchPayment = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error verifying payment: " + (error.message || "Unknown error"),
+      error: error.message
+    });
+  }
+};
+
+// Controller function to move a pitch to history
+exports.moveToHistory = async (req, res) => {
+  try {
+    const { pitchId } = req.params;
+
+    if (!pitchId) {
+      return res.status(400).json({
+        success: false,
+        message: "Pitch ID is required"
+      });
+    }
+
+    // Find the pitch
+    const pitch = await InvestorPitch.findById(pitchId);
+    if (!pitch) {
+      return res.status(404).json({
+        success: false,
+        message: "Pitch not found"
+      });
+    }
+
+    // Check if pitch is either accepted or rejected
+    if (pitch.status !== 'accepted' && pitch.status !== 'rejected') {
+      return res.status(400).json({
+        success: false,
+        message: "Only accepted or rejected pitches can be moved to history"
+      });
+    }
+
+    // Check if pitch is older than 90 days
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    
+    if (pitch.createdAt < ninetyDaysAgo) {
+      return res.status(400).json({
+        success: false,
+        message: "Pitches older than 90 days cannot be moved to history"
+      });
+    }
+
+    // Update the pitch to mark it as moved to history
+    pitch.isInHistory = true;
+    await pitch.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Pitch moved to history successfully",
+      data: pitch
+    });
+
+  } catch (error) {
+    console.error('Error moving pitch to history:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error moving pitch to history: " + (error.message || "Unknown error"),
       error: error.message
     });
   }
