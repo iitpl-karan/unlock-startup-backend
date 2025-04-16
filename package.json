@@ -26,6 +26,7 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "fs": "^0.0.1-security",
+    "html-pdf-node": "^1.0.8",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.2.1",
     "multer": "^1.4.5-lts.1",
@@ -33,6 +34,7 @@
     "nodemon": "^3.1.9",
     "nvm": "^0.0.4",
     "pm2": "^5.3.1",
+    "puppeteer": "^24.6.1",
     "razorpay": "^2.9.4"
   },
   "devDependencies": {
