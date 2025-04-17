@@ -1210,8 +1210,8 @@ exports.createPitchOrder = async (req, res) => {
     
     // Create a new Razorpay instance
     const razorpay = new Razorpay({
-      key_id: 'rzp_test_LHVztjvE6284Fc' || 'rzp_live_g1FdyUyG50U2Rq',
-      key_secret: 'rPadlUmDez0bzOJVdstU0vpy' || process.env.key_secret
+      key_id: 'rzp_live_g1FdyUyG50U2Rq' || 'rzp_live_g1FdyUyG50U2Rq',
+      key_secret: 'R51PWtCFLwq2exPJ85QaCKSK' || process.env.key_secret
     });
     
     // Create a shorter timestamp to keep receipt string length under 40 characters
@@ -1284,7 +1284,7 @@ exports.verifyPitchPayment = async (req, res) => {
     
     // Validate signature
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSign = crypto.createHmac("sha256", 'rPadlUmDez0bzOJVdstU0vpy')
+    const expectedSign = crypto.createHmac("sha256", 'R51PWtCFLwq2exPJ85QaCKSK')
       .update(sign.toString())
       .digest("hex");
     
