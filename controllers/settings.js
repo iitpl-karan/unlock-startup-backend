@@ -30,7 +30,7 @@ exports.getAllGeneralData = async (req, res) => {
 exports.addorUpdateGeneralData = async (req, res) => {
     console.log('dfhjk');
     try {
-        const { timezone, currency, address, sitetitle, Tax, cin, pin, gst, slogan, EventPrize, StartupChallegeprize, PrimiumChallegeprize, adminemail, admincontactno, whatsappno, isAdmin, facebookurl, instagramurl, twitterurl, linkedinurl, currentDate, investorSubscriptionPlans } = req.body;
+        const { timezone, currency, address, sitetitle, Tax, cin, pin, gst, slogan, EventPrize, StartupChallegeprize, PrimiumChallegeprize, pitchSubmissionPrice, adminemail, admincontactno, whatsappno, isAdmin, facebookurl, instagramurl, twitterurl, linkedinurl, currentDate, investorSubscriptionPlans } = req.body;
 
         if (isAdmin === true || isAdmin === 'true') {
             // Prepare price fields
@@ -39,6 +39,7 @@ exports.addorUpdateGeneralData = async (req, res) => {
             if (EventPrize) priceFields.EventPrize = EventPrize;
             if (StartupChallegeprize) priceFields.StartupChallegeprize = StartupChallegeprize;
             if (Tax) priceFields.Tax = Tax;
+            if (pitchSubmissionPrice) priceFields.pitchSubmissionPrice = pitchSubmissionPrice;
             
             // Add investor subscription plans if provided
             if (investorSubscriptionPlans) {
@@ -125,5 +126,69 @@ exports.addorUpdateGeneralData = async (req, res) => {
     } catch (err) {
         console.log("Error updating settings:", err);
         res.status(500).json({ message: "Internal server error", error: err.message });
+    }
+};
+
+// Public endpoint for pricing data (no auth required)
+exports.getPublicPricing = async (req, res) => {
+    try {
+        // Find the latest price settings
+        const priceSettings = await Pricemodel.findOne().sort({ date: -1 });
+        
+        if (!priceSettings) {
+            // Return default values if no settings found
+            return res.status(200).json({
+                success: true,
+                priceId: {
+                    pitchSubmissionPrice: 300,
+                    Tax: 18,
+                    pitchGST: 18
+                }
+            });
+        }
+        
+        // Return the price data
+        return res.status(200).json({
+            success: true,
+            priceId: {
+                pitchSubmissionPrice: priceSettings.pitchSubmissionPrice || 300,
+                Tax: priceSettings.Tax || 18,
+                pitchGST: priceSettings.pitchGST || 18,
+                // Only include other fields that should be publicly visible
+                EventPrize: priceSettings.EventPrize,
+                StartupChallegeprize: priceSettings.StartupChallegeprize
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching public pricing data:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to retrieve pricing information"
+        });
+    }
+};
+
+// Get pricing data for settings page
+exports.getPricingData = async (req, res) => {
+    try {
+        const priceSettings = await Pricemodel.findOne().sort({ date: -1 });
+        
+        if (!priceSettings) {
+            return res.status(404).json({
+                success: false,
+                message: "Pricing data not found"
+            });
+        }
+        
+        return res.status(200).json({
+            success: true,
+            priceId: priceSettings
+        });
+    } catch (error) {
+        console.error("Error fetching pricing data:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to retrieve pricing information"
+        });
     }
 };

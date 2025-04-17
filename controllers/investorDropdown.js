@@ -21,6 +21,45 @@ exports.getAllDropdownValues = async (req, res) => {
     }
 };
 
+// Get all dropdown values with pagination
+exports.getAllDropdownValuesPagination = async (req, res) => {
+    try {
+        const { dropdownType } = req.query;
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        
+        let filter = {};
+        if (dropdownType && dropdownType !== 'all') {
+            filter.dropdownType = dropdownType;
+        }
+        
+        const skip = (page - 1) * limit;
+        
+        const result = await InvestorDropdown.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+            
+        const totalItems = await InvestorDropdown.countDocuments(filter);
+        
+        res.status(200).json({
+            data: result,
+            meta_data: {
+                total_data: totalItems,
+                current_page: page,
+                data_limit: limit,
+                total_pages: Math.ceil(totalItems / limit),
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
 // Add new dropdown value
 exports.addDropdownValue = async (req, res) => {
     try {

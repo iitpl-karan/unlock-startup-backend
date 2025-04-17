@@ -79,6 +79,48 @@ exports.getUserPitches = async (req, res) => {
     }
 };
 
+// Get all pitches for a user with pagination
+exports.getUserPitchesPagination = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const skip = (page - 1) * limit;
+        
+        // Optional filters
+        const { status } = req.query;
+        let query = { user: req.user._id };
+        
+        if (status && status !== 'all') {
+            query.status = status;
+        }
+        
+        const pitches = await InvestorPitch.find(query)
+            .populate('investor', 'investorname investoremail')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+        
+        const totalItems = await InvestorPitch.countDocuments(query);
+        
+        res.status(200).json({
+            success: true,
+            data: pitches,
+            meta_data: {
+                total_data: totalItems,
+                current_page: page,
+                data_limit: limit,
+                total_pages: Math.ceil(totalItems / limit),
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching pitches',
+            error: error.message
+        });
+    }
+};
+
 // Update pitch status
 exports.updatePitchStatus = async (req, res) => {
     try {

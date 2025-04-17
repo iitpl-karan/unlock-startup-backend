@@ -35,6 +35,9 @@ router.get('/get-all-investors', InvestorController.getAllInvestors);
 // New route to get all pitches for an investor
 router.get('/get-investor-pitches/:investorId', InvestorController.getInvestorPitches);
 
+// New route to get all pitches for an investor with pagination
+router.get('/get-investor-pitches-pagination/:investorId', InvestorController.getInvestorPitchesPagination);
+
 // New route to update pitch status
 router.patch('/update-pitch-status/:pitchId', InvestorController.updatePitchStatus);
 

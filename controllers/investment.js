@@ -29,7 +29,6 @@ exports.newInvestorType = async (req, res) => {
                     message: "InvestmentType already exist"
                 })
             }
-
             const newCategory = new InvestmentType({
                 name,
                 slug,

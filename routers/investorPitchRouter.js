@@ -12,6 +12,9 @@ router.get('/investor-pitches/:investorId', userAuth, investorPitchController.ge
 // Route to get all pitches for the current user
 router.get('/user-pitches', userAuth, investorPitchController.getUserPitches);
 
+// Route to get all pitches for the current user with pagination
+router.get('/user-pitches-pagination', userAuth, investorPitchController.getUserPitchesPagination);
+
 // Route to update pitch status
 router.patch('/update-status/:pitchId', userAuth, investorPitchController.updatePitchStatus);
 

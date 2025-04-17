@@ -1769,4 +1769,96 @@ exports.getAllPayments = async (req, res) => {
       message: "Error fetching payments: " + (error.message || "Unknown error")
     });
   }
+};
+
+// Get all payments for admin panel with pagination
+exports.getAllPaymentsPagination = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+    
+    // Optional filters
+    const { paymentStatus, paymentType, search } = req.query;
+    let query = {};
+    
+    if (paymentStatus && paymentStatus !== 'all') {
+      query.status = paymentStatus;
+    }
+    
+    if (paymentType && paymentType !== 'all') {
+      query.paymentType = paymentType;
+    }
+    
+    if (search) {
+      query.$or = [
+        { payment_id: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    // Fetch paginated payments and populate user information
+    const payments = await Payment.find(query)
+      .populate('user', 'name email')
+      .populate('subscription', 'plan endDate')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    const totalItems = await Payment.countDocuments(query);
+    
+    // Enhance payment records with additional information
+    const enhancedPayments = await Promise.all(
+      payments.map(async payment => {
+        let planName = 'N/A';
+        let planType = 'N/A';
+        let endDate = null;
+
+        try {
+          if (payment.subscription) {
+            const subscription = payment.subscription;
+            if (subscription.plan && typeof subscription.plan === 'object') {
+              planName = subscription.plan.name;
+              planType = subscription.plan.planType;
+            }
+            endDate = subscription.endDate;
+          }
+        } catch (error) {
+          console.log('Error getting plan details for payment:', error);
+        }
+
+        return {
+          _id: payment._id,
+          payment_id: payment.payment_id || payment.razorpay_payment_id,
+          order_id: payment.order_id || payment.razorpay_order_id,
+          user: payment.user,
+          amount: payment.amount,
+          status: payment.status,
+          paymentType: payment.paymentType,
+          method: payment.method,
+          description: payment.description,
+          planName,
+          planType,
+          endDate,
+          createdAt: payment.createdAt
+        };
+      })
+    );
+
+    return res.status(200).json({
+      data: enhancedPayments,
+      meta_data: {
+        total_data: totalItems,
+        current_page: page,
+        data_limit: limit,
+        total_pages: Math.ceil(totalItems / limit)
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching paginated payments:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching payments: " + (error.message || "Unknown error")
+    });
+  }
 }; 

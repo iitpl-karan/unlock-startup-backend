@@ -5,6 +5,9 @@ const investorDropdownController = require('../controllers/investorDropdown');
 // Get all dropdown values (with optional filtering by type)
 router.get('/get-all', investorDropdownController.getAllDropdownValues);
 
+// Get all dropdown values with pagination
+router.get('/get-all-pagination', investorDropdownController.getAllDropdownValuesPagination);
+
 // Add new dropdown value
 router.post('/add', investorDropdownController.addDropdownValue);
 

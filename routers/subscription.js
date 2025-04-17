@@ -35,6 +35,7 @@ router.get("/payment-history/:investorId", subscriptionController.getInvestorPay
 // Admin routes - these are additional admin-specific endpoints
 router.get("/admin/subscriptions", userAuth, subscriptionController.getAllSubscriptions);
 router.get("/admin/payments", userAuth, subscriptionController.getAllPayments);
+router.get("/admin/payments-pagination", userAuth, subscriptionController.getAllPaymentsPagination);
 
 // Public webhook for Razorpay
 router.post("/razorpay-webhook", subscriptionController.RazorpayResponse);

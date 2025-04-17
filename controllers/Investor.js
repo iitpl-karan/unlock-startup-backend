@@ -8,6 +8,7 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const User = require("../models/usersModel");
 const Payment = require("../models/Payment");
+const Pricemodel = require("../models/Pricemodel");
 exports.getAllInvestorType = async (req, res) => {
     try {
         const result = await Investor.find()
@@ -891,6 +892,70 @@ exports.getInvestorPitches = async (req, res) => {
   }
 }
 
+// New controller function to get all pitches for an investor with pagination
+exports.getInvestorPitchesPagination = async (req, res) => {
+  try {
+    const { investorId } = req.params;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+    
+    // Optional filters
+    const { status } = req.query;
+    
+    if (!investorId) {
+      return res.status(400).json({
+        success: false,
+        message: "Investor ID is required"
+      });
+    }
+
+    // Find the investor
+    const investor = await InvestorUser.findById(investorId);
+    if (!investor) {
+      return res.status(404).json({
+        success: false,
+        message: "Investor not found"
+      });
+    }
+    
+    // Build the query
+    let query = { investor: investorId };
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+    
+    // Find all pitches for this investor with populated user data, applying pagination
+    const pitches = await InvestorPitch.find(query)
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    // Get total count for pagination
+    const totalItems = await InvestorPitch.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      data: pitches,
+      meta_data: {
+        total_data: totalItems,
+        current_page: page,
+        data_limit: limit,
+        total_pages: Math.ceil(totalItems / limit),
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching investor pitches with pagination:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching investor pitches: " + (error.message || "Unknown error"),
+      error: error.message
+    });
+  }
+}
+
 // New controller function to update pitch status
 exports.updatePitchStatus = async (req, res) => {
   try {
@@ -1145,8 +1210,8 @@ exports.createPitchOrder = async (req, res) => {
     
     // Create a new Razorpay instance
     const razorpay = new Razorpay({
-      key_id: 'rzp_live_g1FdyUyG50U2Rq' || 'rzp_live_g1FdyUyG50U2Rq',
-      key_secret: 'R51PWtCFLwq2exPJ85QaCKSK' || process.env.key_secret
+      key_id: 'rzp_test_LHVztjvE6284Fc' || 'rzp_live_g1FdyUyG50U2Rq',
+      key_secret: 'rPadlUmDez0bzOJVdstU0vpy' || process.env.key_secret
     });
     
     // Create a shorter timestamp to keep receipt string length under 40 characters
@@ -1219,7 +1284,7 @@ exports.verifyPitchPayment = async (req, res) => {
     
     // Validate signature
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSign = crypto.createHmac("sha256", 'R51PWtCFLwq2exPJ85QaCKSK')
+    const expectedSign = crypto.createHmac("sha256", 'rPadlUmDez0bzOJVdstU0vpy')
       .update(sign.toString())
       .digest("hex");
     
@@ -1245,22 +1310,44 @@ exports.verifyPitchPayment = async (req, res) => {
     
     // Save payment record
     await payment.save();
+    console.log('Payment record saved successfully:', payment._id);
 
     // Get user details for the invoice
     const user = await User.findById(userId);
     if (!user) {
-      console.error('User not found for invoice email');
+      console.error('User not found for invoice email, userId:', userId);
     } else {
+      console.log('User found for invoice email:', user.email);
+      
       try {
-        // Create nodemailer transporter
+        // Get price data for the correct amount
+        const priceData = await Pricemodel.findOne();
+        const pitchSubmissionPrice = priceData?.pitchSubmissionPrice || 300;
+        
+        // Create nodemailer transporter with robust error handling
         let transporter = nodemailer.createTransport({
           host: "smtp.hostinger.com",
           port: 587,
-          secure: false,
+          secure: false, // true for 465, false for other ports
           auth: {
             user: 'info@unlockstartup.com',
             pass: 'Z2q^Hoj>K4',
           },
+          tls: {
+            // do not fail on invalid certs
+            rejectUnauthorized: false
+          },
+          debug: true,
+          logger: true // log information to console
+        });
+        
+        // Verify SMTP connection configuration
+        transporter.verify(function(error, success) {
+          if (error) {
+            console.error('SMTP server connection error:', error);
+          } else {
+            console.log('SMTP server connection successful, server ready to take messages');
+          }
         });
 
         // Get today's date formatted as DD/MM/YYYY
@@ -1268,18 +1355,18 @@ exports.verifyPitchPayment = async (req, res) => {
         const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
         
         // Format amount with commas and currency symbol
-        const formattedAmount = (300).toLocaleString('en-IN', {
+        const formattedAmount = pitchSubmissionPrice.toLocaleString('en-IN', {
           maximumFractionDigits: 0,
           style: 'currency',
           currency: 'INR'
         });
 
-        // Generate invoice number (you can modify this format as needed)
+        // Generate invoice number
         const invoiceNumber = `INV-${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}-${payment._id.toString().slice(-6)}`;
 
         // Prepare email content with invoice
         const mailOptions = {
-          from: 'info@unlockstartup.com',
+          from: '"Unlock Startup" <info@unlockstartup.com>',
           to: user.email,
           subject: 'Payment Invoice - Pitch Submission',
           html: `
@@ -1343,10 +1430,17 @@ exports.verifyPitchPayment = async (req, res) => {
           `,
         };
 
-        // Send the invoice email asynchronously
-        transporter.sendMail(mailOptions).catch(emailError => {
-          console.error('Error sending invoice email:', emailError);
-        });
+        console.log('Sending invoice email to:', user.email);
+        
+        // Send the invoice email
+        try {
+          const info = await transporter.sendMail(mailOptions);
+          console.log('Invoice email sent successfully:', info.messageId);
+          console.log('Email preview URL:', nodemailer.getTestMessageUrl(info));
+        } catch (emailSendError) {
+          console.error('Error sending invoice email:', emailSendError);
+        }
+        
       } catch (emailError) {
         console.error('Error setting up invoice email:', emailError);
       }

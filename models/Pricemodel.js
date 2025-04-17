@@ -14,6 +14,14 @@ const PriceSchema = new Schema({
     Tax: {
         type: Number,
     },
+    pitchSubmissionPrice: {
+        type: Number,
+        default: 300, // Default price for pitch submission
+    },
+    pitchGST: {
+        type: Number,
+        default: 18, // Default GST percentage for pitch submission
+    },
     investorSubscriptionPlans: [{
         type: Schema.Types.ObjectId,
         ref: 'SubscriptionPlan'

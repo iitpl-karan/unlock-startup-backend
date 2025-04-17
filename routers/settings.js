@@ -11,5 +11,10 @@ router.patch("/update-general-settings", upload.fields([
 
 router.get("/get-general-details", settingsController.getAllGeneralData)
 
+// Public pricing endpoint - no auth required
+router.get("/public/pricing", settingsController.getPublicPricing);
+
+// Get pricing data for settings page
+router.get("/get-pricing", settingsController.getPricingData);
 
 module.exports = router;

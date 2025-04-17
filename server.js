@@ -108,6 +108,43 @@ app.use('/unlock/api/investment', Investment)
 app.use('/unlock/api/investor-pitches', investorPitchRouter)
 app.use('/unlock/api/investor-dropdown', investorDropdownRouter)
 
+// Add a direct public API for pricing without auth requirement
+app.get('/unlock/api/public/pricing', async (req, res) => {
+    try {
+        // Find the latest price settings
+        const Pricemodel = require("./models/Pricemodel");
+        const priceSettings = await Pricemodel.findOne().sort({ date: -1 });
+        
+        if (!priceSettings) {
+            // Return default values if no settings found
+            return res.status(200).json({
+                success: true,
+                priceId: {
+                    pitchSubmissionPrice: 300, // Default price
+                    Tax: 18, // Default tax
+                    pitchGST: 18 // Default GST for pitch submission
+                }
+            });
+        }
+        
+        // Return the price data
+        return res.status(200).json({
+            success: true,
+            priceId: {
+                pitchSubmissionPrice: priceSettings.pitchSubmissionPrice || 300,
+                Tax: priceSettings.Tax || 18,
+                pitchGST: priceSettings.pitchGST || 18
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching public pricing data:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to retrieve pricing information"
+        });
+    }
+});
+
 const port = process.env.PORT || 8002;
 
 app.listen(port, () => {
