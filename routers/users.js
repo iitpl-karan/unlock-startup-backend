@@ -4,6 +4,7 @@ const usersController = require('../controllers/users')
 const { upload } = require('../helpers/multer')
 
 router.post("/register", usersController.createNewUser);
+router.post("/update-status", usersController.updateUserStatus);
 router.post("/user-login", usersController.userLogin);
 
 router.get("/get-all-users", usersController.getAllUsers);

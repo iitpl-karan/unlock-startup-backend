@@ -180,11 +180,18 @@ exports.createNewUser = async (req, res) => {
     console.log(userType, "user type", req.body)
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const userAlreadyExist = await Users.findOne({ email });
-    if (userAlreadyExist) {
-      return res.status(400).json({
-        message: "User already exist",
-      });
+    const existingUser = await Users.findOne({ email });
+    if (existingUser) {
+      // Check if this is a temporary user from email verification
+      if (existingUser.isTemporary === true && existingUser.isVerified === true) {
+        // This is a verified temporary user, we'll update it instead of creating a new one
+        console.log("Found existing temporary verified user, will update instead of creating new");
+      } else {
+        // This is a regular existing user, prevent duplicate registration
+        return res.status(400).json({
+          message: "User already exists",
+        });
+      }
     }
 
     if (userType === "Individual") {
@@ -274,8 +281,86 @@ exports.createNewUser = async (req, res) => {
         industerytype, 
         phone,
         fullName,
-        subscriptionId // Check if a subscription ID was passed from the frontend
+        subscriptionId, // Check if a subscription ID was passed from the frontend
+        emailVerified, // Add this parameter to check if email is verified
+        terms
       } = req.body;
+
+      // Email verification check
+      if (!emailVerified && !existingUser?.isVerified) {
+        // Check if there's already an email verification in progress
+        const existingVerification = await Users.findOne({ 
+          email, 
+          otp: { $exists: true },
+          otpExpiry: { $exists: true, $gt: Date.now() }
+        });
+
+        if (existingVerification) {
+          return res.status(400).json({ 
+            message: "Email verification already in progress. Please check your email for the verification code."
+          });
+        }
+
+        // Email not verified, we need to generate OTP and send email
+        // Generate OTP
+        const otp = crypto.randomInt(100000, 999999);
+        const otpExpiry = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+
+        // Create temporary user with OTP
+        const tempUser = new Users({
+          name: fullname,
+          email: email,
+          userType: userType,
+          otp: otp,
+          otpExpiry: otpExpiry
+        });
+
+        await tempUser.save();
+
+        // Send OTP email
+        let transporter = nodemailer.createTransport({
+          host: "smtp.hostinger.com",
+          port: 587,
+          secure: false,
+          auth: {
+            user: 'info@unlockstartup.com',
+            pass: 'Z2q^Hoj>K4',
+          },
+        });
+
+        const mailOptions = {
+          from: 'info@unlockstartup.com',
+          to: email,
+          subject: 'Email Verification Code - Unlock Startup',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <img src="https://unlockstartup.com/unlock/uploads/Logo.png" alt="Unlock Startup Logo" style="max-width: 200px;">
+              </div>
+              <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
+                <h2 style="color: #333; margin-bottom: 20px;">Verify Your Email Address</h2>
+                <p style="font-size: 16px; line-height: 1.5; color: #555;">Dear ${fullname},</p>
+                <p style="font-size: 16px; line-height: 1.5; color: #555;">Thank you for registering with Unlock Startup. Please use the following verification code to complete your registration:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; padding: 10px 20px; background-color: #f0f0f0; border-radius: 5px; display: inline-block; color: #333;">${otp}</div>
+                </div>
+                <p style="font-size: 16px; line-height: 1.5; color: #555;">The code is valid for 10 minutes. If you didn't request this code, please ignore this email.</p>
+              </div>
+              <div style="margin-top: 20px; text-align: center; color: #888; font-size: 14px;">
+                <p>© ${new Date().getFullYear()} Unlock Startup. All rights reserved.</p>
+              </div>
+            </div>
+          `
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        return res.status(200).json({ 
+          message: "Please verify your email. A verification code has been sent to your email address.",
+          requiresVerification: true
+        });
+      }
+
       console.log(fullname, "running hgere")
       // Create Investor Details
       const investorDetails = new InvestorUser({
@@ -289,7 +374,7 @@ exports.createNewUser = async (req, res) => {
         investoremail: email,
         password: hashedPassword,
         investorname: fullname,
-        terms: req.body.terms || false,
+        terms: terms || false,
         investorDetails: {
           name: fullname || '',
           type: investorType || '',
@@ -312,20 +397,35 @@ exports.createNewUser = async (req, res) => {
       console.log("doine")
 
       if (savedInvestorDetails) {
-        const user = new Users({
-          name: fullname || "",
-          username,
-          email,
-          password: hashedPassword,
-          userType,
-          investorDetailsId: savedInvestorDetails._id,
-          // Also set the currentSubscription in the User model
-          currentSubscription: subscriptionId || null
-        });
-        const savedUser = await user.save();
-        if (savedUser) {
+        let user;
+        
+        if (existingUser && existingUser.isTemporary === true && existingUser.isVerified === true) {
+          // Update existing temporary verified user
+          existingUser.name = fullname || "";
+          existingUser.password = hashedPassword;
+          existingUser.investorDetailsId = savedInvestorDetails._id;
+          existingUser.currentSubscription = subscriptionId || null;
+          existingUser.isTemporary = false; // Mark as permanent user now
+          
+          user = await existingUser.save();
+        } else {
+          // Create a new user
+          user = new Users({
+            name: fullname || "",
+            username,
+            email,
+            password: hashedPassword,
+            userType,
+            investorDetailsId: savedInvestorDetails._id,
+            // Also set the currentSubscription in the User model
+            currentSubscription: subscriptionId || null
+          });
+          user = await user.save();
+        }
+        
+        if (user) {
           // Optionally, update the investor details with the user ID
-          savedInvestorDetails.userId = savedUser._id;
+          savedInvestorDetails.userId = user._id;
           
           // If we have a subscriptionId, check if we need to update the subscription's investor field
           if (subscriptionId) {
@@ -334,9 +434,9 @@ exports.createNewUser = async (req, res) => {
               const InvestorSubscription = require('../models/InvestorSubscription');
               const subscription = await InvestorSubscription.findById(subscriptionId);
               if (subscription && subscription.investor.toString().startsWith('temp-')) {
-                subscription.investor = savedUser._id;
+                subscription.investor = user._id;
                 await subscription.save();
-                console.log(`Updated subscription ${subscriptionId} investor field from temporary to ${savedUser._id}`);
+                console.log(`Updated subscription ${subscriptionId} investor field from temporary to ${user._id}`);
               }
               
               // Add subscription to payment history if not already there
@@ -360,7 +460,7 @@ exports.createNewUser = async (req, res) => {
           
           return res.status(200).json({
             message: "Investor User Created successfully",
-            user: savedUser,
+            user: user,
             investorDetails: savedInvestorDetails
           });
         } else {
@@ -423,6 +523,53 @@ exports.createNewUser = async (req, res) => {
     res.status(500).json({
       message: "Some server error occurred",
     });
+  }
+};
+
+exports.updateUserStatus = async (req, res) => {
+  try {
+    const { email, isAdmin, status, isTemporary, isVerified, subscriptionId } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        message: "Email is required to update user status",
+      });
+    }
+
+    // Check admin rights or allow self-update
+    if (isAdmin === true || isAdmin === 'true' || (req.user && req.user.email === email)) {
+      const updateData = {};
+      
+      // Only update the fields that were provided
+      if (typeof status !== 'undefined') updateData.status = status;
+      if (typeof isTemporary !== 'undefined') updateData.isTemporary = isTemporary;
+      if (typeof isVerified !== 'undefined') updateData.isVerified = isVerified;
+      if (subscriptionId) updateData.currentSubscription = subscriptionId;
+      
+      const updatedUser = await Users.findOneAndUpdate(
+        { email },
+        updateData,
+        { new: true }
+      );
+
+      if (updatedUser) {
+        return res.status(200).json({
+          message: "User status has been updated",
+          user: updatedUser
+        });
+      } else {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+    } else {
+      return res.status(403).json({
+        message: "Unauthorized to update user status",
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -1140,6 +1287,29 @@ exports.ResetPassword = async (req, res) => {
     user.password = hashedPassword;
     user.otp = undefined;
     await user.save();
+
+    // Also update password in InvestorUser model if this is an investor
+    if (user.userType === 'Investor') {
+      // Try to find the investor by the relationship first
+      let investorUser;
+      
+      if (user.investorDetailsId) {
+        // If we have a direct reference to the investor details
+        investorUser = await InvestorUser.findById(user.investorDetailsId);
+      }
+      
+      if (!investorUser) {
+        // If no investor found by ID, try looking up by email
+        investorUser = await InvestorUser.findOne({ investoremail: email });
+      }
+      
+      if (investorUser) {
+        // Update the investor's password
+        investorUser.password = hashedPassword;
+        await investorUser.save();
+        console.log('Updated password in InvestorUser model for:', email);
+      }
+    }
 
     res.status(200).json({ message: 'NewPassword updated successfully' });
   } catch (error) {

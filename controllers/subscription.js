@@ -389,7 +389,14 @@ exports.activateFreePlan = async (req, res) => {
 // Get all subscription plans
 exports.getAllPlans = async (req, res) => {
   try {
-    const plans = await SubscriptionPlan.find({ isActive: true });
+    // Check if the request is from admin panel
+    const isAdminRequest = req.query.isAdmin === 'true';
+    
+    // For admin panel, return all plans (active and inactive)
+    // For frontend users, return only active plans
+    const plans = isAdminRequest 
+      ? await SubscriptionPlan.find() 
+      : await SubscriptionPlan.find({ isActive: true });
     
     return res.status(200).json({
       success: true,

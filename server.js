@@ -47,12 +47,34 @@ const investorPitchRouter = require('./routers/investorPitchRouter');
 
 app.use(cookieParser());
 
+// Enable CORS with more specific configuration
 app.use(cors({
-  origin: '*',  // Allows requests from any origin
+  origin: function(origin, callback) {
+    // Allow any origin (for development)
+    console.log('Request from origin:', origin);
+    callback(null, true);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true // Allow cookies and authorization headers
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true, // Allow cookies and authorization headers
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Add CORS headers directly for preflight requests
+app.options('*', (req, res) => {
+  console.log('Preflight request received');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.sendStatus(204);
+});
+
+// Log all requests for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} [${req.method}] ${req.url}`);
+  next();
+});
 
 app.use(bodyParser.json());
 app.use(

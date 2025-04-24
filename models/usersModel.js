@@ -14,6 +14,9 @@ const UsersSchema = new Schema({
   companyDetailsId: { type: Schema.Types.ObjectId, default: null , ref : 'CompanyDetails' }, // Reference to companyDetails document, if userType is "Company"
   userDetailsId: { type: Schema.Types.ObjectId, default: null  , ref: 'UserDetails' }, // Reference to userDetails document, if userType is "Individual/startup"
   status: { type: Number, default: 1 },
+  // Added fields for email verification
+  isVerified: { type: Boolean, default: false }, // Whether email has been verified
+  isTemporary: { type: Boolean, default: false }, // Whether this is a temporary user record for verification
   // Subscription information
   currentSubscription: {
     type: Schema.Types.ObjectId,

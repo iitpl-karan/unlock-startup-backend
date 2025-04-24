@@ -6,9 +6,10 @@ const InvestorPitch = require('../models/InvestorPitch');
 const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const User = require("../models/usersModel");
+const Users = require("../models/usersModel");
 const Payment = require("../models/Payment");
 const Pricemodel = require("../models/Pricemodel");
+
 exports.getAllInvestorType = async (req, res) => {
     try {
         const result = await Investor.find()
@@ -920,7 +921,11 @@ exports.getInvestorPitchesPagination = async (req, res) => {
     }
     
     // Build the query
-    let query = { investor: investorId };
+    let query = { 
+      investor: investorId,
+      isInHistory: false // Filter out pitches that are in history
+    };
+    
     if (status && status !== 'all') {
       query.status = status;
     }
@@ -1313,7 +1318,7 @@ exports.verifyPitchPayment = async (req, res) => {
     console.log('Payment record saved successfully:', payment._id);
 
     // Get user details for the invoice
-    const user = await User.findById(userId);
+    const user = await Users.findById(userId);
     if (!user) {
       console.error('User not found for invoice email, userId:', userId);
     } else {
@@ -1495,17 +1500,6 @@ exports.moveToHistory = async (req, res) => {
       });
     }
 
-    // Check if pitch is older than 90 days
-    const ninetyDaysAgo = new Date();
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-    
-    if (pitch.createdAt < ninetyDaysAgo) {
-      return res.status(400).json({
-        success: false,
-        message: "Pitches older than 90 days cannot be moved to history"
-      });
-    }
-
     // Update the pitch to mark it as moved to history
     pitch.isInHistory = true;
     await pitch.save();
@@ -1521,6 +1515,312 @@ exports.moveToHistory = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error moving pitch to history: " + (error.message || "Unknown error"),
+      error: error.message
+    });
+  }
+};
+
+// Send email verification OTP
+exports.sendEmailVerification = async (req, res) => {
+    try {
+        const { email, fullname } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Email is required for verification'
+            });
+        }
+
+        // Check if investor with this email already exists
+        const existingInvestor = await InvestorUser.findOne({ investoremail: email });
+        if (existingInvestor) {
+            return res.status(400).json({
+                success: false,
+                message: 'An account with this email already exists'
+            });
+        }
+
+        // Generate OTP (moved outside the if block to make it accessible throughout the function)
+        const otp = crypto.randomInt(100000, 999999);
+        const otpExpiry = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+
+        // Check if there's an existing user record or create one
+        let user = await Users.findOne({ email: email });
+        if (!user) {
+            // Create a temporary user entry to store the OTP
+            user = new Users({
+                name: fullname || 'Investor User',
+                email: email,
+                userType: 'Investor',
+                otp: otp,
+                otpExpiry: otpExpiry,
+                isVerified: false,
+                isTemporary: true // Flag to indicate this is a temporary record pending completion
+            });
+        } else {
+            // Update existing user with new OTP
+            user.otp = otp;
+            user.otpExpiry = otpExpiry;
+        }
+
+        await user.save({ validateModifiedOnly: true });
+
+        // Configure nodemailer
+        let transporter = nodemailer.createTransport({
+            host: "smtp.hostinger.com",
+            port: 587,
+            secure: false,
+            auth: {
+                user: 'info@unlockstartup.com',
+                pass: 'Z2q^Hoj>K4',
+            },
+        });
+
+        // Send OTP email
+        const mailOptions = {
+            from: 'info@unlockstartup.com',
+            to: email,
+            subject: 'Email Verification Code - Unlock Startup',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="https://unlockstartup.com/unlock/uploads/Logo.png" alt="Unlock Startup Logo" style="max-width: 200px;">
+                    </div>
+                    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
+                        <h2 style="color: #333; margin-bottom: 20px;">Verify Your Email Address</h2>
+                        <p style="font-size: 16px; line-height: 1.5; color: #555;">Dear ${fullname || 'Investor'},</p>
+                        <p style="font-size: 16px; line-height: 1.5; color: #555;">Thank you for registering with Unlock Startup. Please use the following verification code to complete your registration:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; padding: 10px 20px; background-color: #f0f0f0; border-radius: 5px; display: inline-block; color: #333;">${otp}</div>
+                        </div>
+                        <p style="font-size: 16px; line-height: 1.5; color: #555;">The code is valid for 10 minutes. If you didn't request this code, please ignore this email.</p>
+                    </div>
+                    <div style="margin-top: 20px; text-align: center; color: #888; font-size: 14px;">
+                        <p>© ${new Date().getFullYear()} Unlock Startup. All rights reserved.</p>
+                    </div>
+                </div>
+            `
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Email verification message sent: %s', info.messageId);
+
+        res.status(200).json({ 
+            success: true,
+            message: 'Verification code sent to your email' 
+        });
+    } catch (err) {
+        console.error('Error sending email verification:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to send verification code. Please try again.' 
+        });
+    }
+};
+
+// Verify email OTP
+exports.verifyEmail = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Email and verification code are required' 
+            });
+        }
+
+        // Find the user with this email
+        const user = await Users.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found. Please try registering again.' 
+            });
+        }
+
+        // Check if OTP is valid and not expired
+        if (user.otp.toString() !== otp.toString()) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid verification code' 
+            });
+        }
+
+        // Check if OTP is expired
+        if (user.otpExpiry && user.otpExpiry < Date.now()) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Verification code has expired. Please request a new one.' 
+            });
+        }
+
+        // OTP is valid, mark as verified
+        user.otp = undefined;
+        user.otpExpiry = undefined;
+        user.isVerified = true; // Mark as verified but still temporary
+        await user.save();
+
+        return res.status(200).json({ 
+            success: true,
+            message: 'Email verified successfully',
+            userId: user._id
+        });
+    } catch (error) {
+        console.error('Error verifying email:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error during verification. Please try again.' 
+        });
+    }
+};
+
+// Resend email verification OTP
+exports.resendEmailVerification = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Email is required' 
+            });
+        }
+
+        // Find the user with this email
+        let user = await Users.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found. Please try registering again.' 
+            });
+        }
+
+        // Generate new OTP
+        const otp = crypto.randomInt(100000, 999999);
+        const otpExpiry = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+
+        user.otp = otp;
+        user.otpExpiry = otpExpiry;
+
+        await user.save();
+
+        // Configure nodemailer
+        let transporter = nodemailer.createTransport({
+            host: "smtp.hostinger.com",
+            port: 587,
+            secure: false,
+            auth: {
+                user: 'info@unlockstartup.com',
+                pass: 'Z2q^Hoj>K4',
+            },
+        });
+
+        // Send OTP email
+        const mailOptions = {
+            from: 'info@unlockstartup.com',
+            to: email,
+            subject: 'New Email Verification Code - Unlock Startup',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="https://unlockstartup.com/unlock/uploads/Logo.png" alt="Unlock Startup Logo" style="max-width: 200px;">
+                    </div>
+                    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
+                        <h2 style="color: #333; margin-bottom: 20px;">Your New Verification Code</h2>
+                        <p style="font-size: 16px; line-height: 1.5; color: #555;">Per your request, here is a new verification code to complete your registration:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; padding: 10px 20px; background-color: #f0f0f0; border-radius: 5px; display: inline-block; color: #333;">${otp}</div>
+                        </div>
+                        <p style="font-size: 16px; line-height: 1.5; color: #555;">The code is valid for 10 minutes. If you didn't request this code, please ignore this email.</p>
+                    </div>
+                    <div style="margin-top: 20px; text-align: center; color: #888; font-size: 14px;">
+                        <p>© ${new Date().getFullYear()} Unlock Startup. All rights reserved.</p>
+                    </div>
+                </div>
+            `
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('New email verification message sent: %s', info.messageId);
+
+        res.status(200).json({ 
+            success: true,
+            message: 'New verification code sent to your email' 
+        });
+    } catch (err) {
+        console.error('Error resending verification code:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to send new verification code. Please try again.' 
+        });
+    }
+};
+
+// Controller function to get all history pitches for an investor with pagination
+exports.getInvestorHistoryPitchesPagination = async (req, res) => {
+  try {
+    const { investorId } = req.params;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+    
+    // Optional filters
+    const { status } = req.query;
+    
+    if (!investorId) {
+      return res.status(400).json({
+        success: false,
+        message: "Investor ID is required"
+      });
+    }
+
+    // Find the investor
+    const investor = await InvestorUser.findById(investorId);
+    if (!investor) {
+      return res.status(404).json({
+        success: false,
+        message: "Investor not found"
+      });
+    }
+    
+    // Build the query
+    let query = { 
+      investor: investorId,
+      isInHistory: true // Only get pitches that are in history
+    };
+    
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+    
+    // Find all pitches for this investor with populated user data, applying pagination
+    const pitches = await InvestorPitch.find(query)
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    // Get total count for pagination
+    const totalItems = await InvestorPitch.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      data: pitches,
+      meta_data: {
+        total_data: totalItems,
+        current_page: page,
+        data_limit: limit,
+        total_pages: Math.ceil(totalItems / limit),
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching investor history pitches with pagination:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching investor history pitches: " + (error.message || "Unknown error"),
       error: error.message
     });
   }

@@ -7,6 +7,12 @@ router.get("/investortype", InvestorController.getAllInvestorType);
 router.patch("/toggle-status", InvestorController.toggleStatus);
 router.delete("/investortype", InvestorController.deleteInvestorType);
 
+// Email verification routes
+router.post("/send-verification", InvestorController.sendEmailVerification);
+router.post("/verify-email", InvestorController.verifyEmail);
+router.post("/resend-verification", InvestorController.resendEmailVerification);
+router.get('/get-investor-pitches/:investorId', InvestorController.getInvestorPitches);
+router.put('/move-to-history/:pitchId', InvestorController.moveToHistory); 
 router.post("/investortype", upload.fields([
     { name: 'categoryimage', maxCount: 1 }
 ]), InvestorController.newInvestorType);
@@ -37,6 +43,9 @@ router.get('/get-investor-pitches/:investorId', InvestorController.getInvestorPi
 
 // New route to get all pitches for an investor with pagination
 router.get('/get-investor-pitches-pagination/:investorId', InvestorController.getInvestorPitchesPagination);
+
+// New route to get history pitches for an investor with pagination
+router.get('/get-investor-history-pitches-pagination/:investorId', InvestorController.getInvestorHistoryPitchesPagination);
 
 // New route to update pitch status
 router.patch('/update-pitch-status/:pitchId', InvestorController.updatePitchStatus);
