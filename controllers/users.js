@@ -885,30 +885,34 @@ exports.getAllUsersPagination = async (req, res) => {
 
 exports.getBusinessUsersPagination = async (req, res) => {
   try {
-
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
 
     const skip = (page - 1) * limit;
 
-    const users = await Users.find({ userType: { $nin: ["admin", "Individual", "Startup"] } })
+    // FIXED: Only explicitly show Business users instead of using $nin
+    const users = await Users.find({ 
+      userType: "Business" 
+    })
       .populate('companyDetailsId userDetailsId')
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1 });
 
-    const totalUser = await Users.countDocuments({});
+    // FIXED: Update count query to match the filter
+    const totalUser = await Users.countDocuments({ 
+      userType: "Business" 
+    });
 
-    res.status(200).json(
-      {
-        data: users,
-        meta_data: {
-          total_data: totalUser,
-          current_page: page,
-          data_limit: limit,
-          total_pages: Math.ceil(totalUser / limit),
-        },
-      });
+    res.status(200).json({
+      data: users,
+      meta_data: {
+        total_data: totalUser,
+        current_page: page,
+        data_limit: limit,
+        total_pages: Math.ceil(totalUser / limit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal Server Error" });
@@ -923,13 +927,22 @@ exports.getInvestorUsersPagination = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    const users = await Users.find({ userType: "Investor" })
+    // Only show verified investors who aren't temporary accounts
+    const users = await Users.find({ 
+      userType: "Investor",
+      isVerified: true,
+      isTemporary: { $ne: true }
+    })
       .populate('companyDetailsId userDetailsId')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
-  console.log(users, "fdsfsdfsdfasf");
-    const totalUser = await Users.countDocuments({ userType: "Investor" });
+
+    const totalUser = await Users.countDocuments({ 
+      userType: "Investor",
+      isVerified: true,
+      isTemporary: { $ne: true }
+    });
 
     res.status(200).json(
       {
@@ -950,32 +963,35 @@ exports.getInvestorUsersPagination = async (req, res) => {
 
 exports.getNormalUserPaginaion = async (req, res) => {
   try {
-
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
 
     const skip = (page - 1) * limit;
 
-    const users = await Users.find({ userType: { $nin: ["admin", "Business"] } })
+    // UPDATED: Only show Individual and Startup users explicitly, rather than using $nin
+    // This ensures we're only getting the exact user types we want
+    const users = await Users.find({ 
+      userType: { $in: ["Individual", "Startup"] }
+    })
       .populate('companyDetailsId userDetailsId')
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1 });
 
-    const totalUser = await Users.countDocuments({});
+    // Count with the same explicit filter
+    const totalUser = await Users.countDocuments({ 
+      userType: { $in: ["Individual", "Startup"] }
+    });
 
-    res.status(200).json(
-
-      {
-        data: users,
-        meta_data: {
-          total_data: totalUser,
-          current_page: page,
-          data_limit: limit,
-          total_pages: Math.ceil(totalUser / limit),
-        },
-      }
-    );
+    res.status(200).json({
+      data: users,
+      meta_data: {
+        total_data: totalUser,
+        current_page: page,
+        data_limit: limit,
+        total_pages: Math.ceil(totalUser / limit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal Server Error" });
