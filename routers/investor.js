@@ -25,6 +25,9 @@ router.patch("/investortype", upload.fields([
     { name: 'categoryimage', maxCount: 1 }
 ]), InvestorController.updateInvestorTypeDetails);
 
+// Admin route to update investor details
+router.put("/update-investor-details", InvestorController.updateInvestorDetails);
+
 router.post("/createInvestor", InvestorController.createNewInvestorUser);
 router.post("/loginInvestor", InvestorController.InvestoruserLogin);
 

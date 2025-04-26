@@ -1825,3 +1825,106 @@ exports.getInvestorHistoryPitchesPagination = async (req, res) => {
     });
   }
 };
+
+// New function to update investor details
+exports.updateInvestorDetails = async (req, res) => {
+    try {
+        const { 
+            id,
+            investorname, 
+            investoremail,
+            phoneNumber,
+            netWorth,
+            responseTime,
+            investorType,
+            stage,
+            fundingAmount,
+            portfolio,
+            companyDetails,
+            investorDetails,
+            isAdmin 
+        } = req.body;
+
+        if (!id) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Investor ID is required" 
+            });
+        }
+
+        // Verify admin access
+        if (isAdmin !== true && isAdmin !== 'true') {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized User"
+            });
+        }
+
+        // Check if email is being changed and if it's already in use
+        if (investoremail) {
+            const existingInvestor = await InvestorUser.findOne({ 
+                investoremail, 
+                _id: { $ne: id } // exclude the current investor
+            });
+
+            if (existingInvestor) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Email is already in use by another investor"
+                });
+            }
+        }
+
+        // Create update object with only the fields that are provided
+        const updateData = {};
+        if (investorname) updateData.investorname = investorname;
+        if (investoremail) updateData.investoremail = investoremail;
+        if (phoneNumber) updateData.phoneNumber = phoneNumber;
+        if (netWorth) updateData.netWorth = netWorth;
+        if (responseTime) updateData.responseTime = responseTime;
+        if (investorType) updateData.investorType = investorType;
+        if (stage) updateData.stage = stage;
+        if (fundingAmount) updateData.fundingAmount = fundingAmount;
+        if (portfolio) updateData.portfolio = portfolio;
+        
+        // Handle company details update if provided
+        if (companyDetails) {
+            updateData['companyDetails.fullName'] = companyDetails.fullName;
+            updateData['companyDetails.designation'] = companyDetails.designation;
+            updateData['companyDetails.email'] = companyDetails.email;
+            updateData['companyDetails.linkedIn'] = companyDetails.linkedIn;
+        }
+        
+        // Handle investor details update if provided
+        if (investorDetails) {
+            if (investorDetails.expertise) updateData['investorDetails.expertise'] = investorDetails.expertise;
+            if (investorDetails.state) updateData['investorDetails.state'] = investorDetails.state;
+        }
+
+        // Update the investor
+        const updatedInvestor = await InvestorUser.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            { new: true }
+        );
+
+        if (!updatedInvestor) {
+            return res.status(404).json({
+                success: false,
+                message: "Investor not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Investor details updated successfully",
+            data: updatedInvestor
+        });
+    } catch (error) {
+        console.error("Error updating investor details:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};

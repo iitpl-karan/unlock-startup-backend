@@ -24,6 +24,8 @@ router.patch("/update-company", upload.fields([
     { name: 'logo', maxCount: 1 }
   ]),usersController.updateCompanyDetails);
 
+router.put("/update-user", usersController.updateUser);
+
 router.post("/admin-login", usersController.adminLogin);
 router.get("/get-admin-details", usersController.getAdminDetails);
 router.patch("/update-admin-details", upload.single('image'), usersController.updateAdminDetails);

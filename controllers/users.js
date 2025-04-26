@@ -1373,6 +1373,74 @@ exports.googleLogin = async (req, res, next) => {
   }
 }
 
+// Function to update user in the Users collection
+exports.updateUser = async (req, res) => {
+  try {
+    const { id, name, email, isAdmin } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required"
+      });
+    }
+
+    // Verify admin access
+    if (isAdmin !== true && isAdmin !== 'true') {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized User"
+      });
+    }
+
+    // Check if email is being changed and if it's already in use
+    if (email) {
+      const existingUser = await Users.findOne({
+        email,
+        _id: { $ne: id } // exclude the current user
+      });
+
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "Email is already in use by another user"
+        });
+      }
+    }
+
+    // Create update object
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+
+    // Update the user
+    const updatedUser = await Users.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User details updated successfully",
+      data: updatedUser
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error"
+    });
+  }
+};
+
 
 
 
