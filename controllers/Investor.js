@@ -472,24 +472,40 @@ exports.updateInvestorProfile = async (req, res) => {
 
 exports.getAllInvestors = async (req, res) => {
   try {
-    const investors = await InvestorUser.find({})
-      .select({
-        investorname: 1,
-        investoremail: 1,
-        investorImage: 1,
-        netWorth: 1,
-        companyDetails: 1,
-        investorDetails: 1,
-        aboutUs: 1,
-        industerytype: 1,
-        userType: 1,
-        responseTime: 1,
-        fundingAmount: 1,
-        portfolio: 1,
-        isPhonePublic: 1,
-        isEmailPublic: 1,
-        phoneNumber: 1
-      });
+    // First get all active users of type Investor
+    const activeInvestorUsers = await Users.find({
+      userType: "Investor",
+      status: 1 // Only active users
+    }).select('_id');
+
+    // Get the list of active investor IDs
+    const activeInvestorIds = activeInvestorUsers.map(user => user._id);
+
+    // Find all investors that have their userId linked to active users
+    // or don't have a userId (standalone investor records)
+    const investors = await InvestorUser.find({
+      $or: [
+        { userId: { $in: activeInvestorIds } },
+        { userId: null } // Include standalone investors that don't have a linked user
+      ]
+    }).select({
+      investorname: 1,
+      investoremail: 1,
+      investorImage: 1,
+      netWorth: 1,
+      companyDetails: 1,
+      investorDetails: 1,
+      aboutUs: 1,
+      industerytype: 1,
+      userType: 1,
+      responseTime: 1,
+      fundingAmount: 1,
+      portfolio: 1,
+      isPhonePublic: 1,
+      isEmailPublic: 1,
+      phoneNumber: 1,
+      userId: 1 // Include userId to check if it's linked
+    });
 
     return res.status(200).json({
       success: true,
