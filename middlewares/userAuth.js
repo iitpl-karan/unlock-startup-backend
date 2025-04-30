@@ -1,4 +1,3 @@
-
 // const { ApiError } = require("../errorHandler/apiErrorHandler");
 const User = require("../models/usersModel");
 const verifyJWT = require("../utils/verifyJWT");
@@ -14,20 +13,35 @@ const userAuth = async (req, res, next) => {
             return res.status(400).json({ message: "token is required" });
         }
 
-		const user = verifyJWT(token);
+		const userPayload = verifyJWT(token);
+		console.log(userPayload, "userPayload from token");
+		
+		if (!userPayload || !userPayload.user) {
+			return res.status(401).json({ message: "Invalid token or user data" });
+		}
 
-		// const rootUser = await User.findById(user.userId);
+		// First try to find user by id
+		let rootUser = await User.findById(userPayload.user.id);
+		
+		// If not found and userId exists, try to find by userId
+		if (!rootUser && userPayload.user.userId) {
+			rootUser = await User.findById(userPayload.user.userId);
+		}
 
-		const rootUser = await User.findById(user.user.id);
-
+		console.log(rootUser, "root user");
+		
 		if (!rootUser) {
             return res.status(404).json({ message: "user does not exist" });
         }
-		if (rootUser.is_deleted) throw new ApiError('user doest not exist', 404);
+		
+		if (rootUser.is_deleted) {
+			return res.status(404).json({ message: "user does not exist" });
+		}
 
 		req.user = rootUser;
 		next();
-	} catch (error) {	
+	} catch (error) {
+		console.error("Auth error:", error);
 		next(error);
 	}
 }

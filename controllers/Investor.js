@@ -285,7 +285,9 @@ exports.InvestoruserLogin = async (req, res) => {
         const payload = {
             user: {
                 id: user.id,
+                userId: user.userId || user.id,
                 companyemail: user.companyemail,
+                userType: user.userType
             }
         };
         jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
