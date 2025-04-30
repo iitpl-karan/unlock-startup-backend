@@ -429,7 +429,8 @@ exports.updateInvestorProfile = async (req, res) => {
                 expertise: investorDetails.expertise,
                 state: investorDetails.state || (investor.investorDetails && investor.investorDetails.state)
             },
-            aboutUs
+            aboutUs,
+            isProfilePublished: true // Set to true when investor publishes their profile
         };
 
         // Only add image fields if new files were uploaded
@@ -483,10 +484,16 @@ exports.getAllInvestors = async (req, res) => {
 
     // Find all investors that have their userId linked to active users
     // or don't have a userId (standalone investor records)
+    // and have published their profile
     const investors = await InvestorUser.find({
-      $or: [
-        { userId: { $in: activeInvestorIds } },
-        { userId: null } // Include standalone investors that don't have a linked user
+      $and: [
+        {
+          $or: [
+            { userId: { $in: activeInvestorIds } },
+            { userId: null } // Include standalone investors that don't have a linked user
+          ]
+        },
+        { isProfilePublished: true } // Only include published profiles
       ]
     }).select({
       investorname: 1,
@@ -534,7 +541,25 @@ exports.getInvestorDetail = async (req, res) => {
         }
 
         // Find investor by email
-        const investor = await InvestorUser.findOne({ investoremail });
+        const investor = await InvestorUser.findOne({ investoremail }).select({
+            investorname: 1,
+            investoremail: 1,
+            investorImage: 1,
+            netWorth: 1,
+            companyDetails: 1,
+            investorDetails: 1,
+            aboutUs: 1,
+            industerytype: 1,
+            userType: 1,
+            responseTime: 1,
+            fundingAmount: 1,
+            portfolio: 1,
+            isPhonePublic: 1,
+            isEmailPublic: 1,
+            phoneNumber: 1,
+            website: 1,
+            isProfilePublished: 1 // Include publication status
+        });
         
         if (!investor) {
             return res.status(404).json({
@@ -559,10 +584,7 @@ exports.getInvestorDetail = async (req, res) => {
 };
 
 exports.submitPitch = async (req, res) => {
-  try {
-    console.log("Submit pitch request received. Body:", req.body);
-    console.log("Files received:", req.files);
-    
+  try { 
     const {
       investorId,
       userId,
@@ -588,9 +610,6 @@ exports.submitPitch = async (req, res) => {
       orderId,
       paymentStatus
     } = req.body;
-
-    console.log("Extracted userId:", userId);
-    console.log("Extracted investorId:", investorId);
     
     // Validate required fields
     if (!investorId) {
@@ -734,10 +753,14 @@ exports.submitPitch = async (req, res) => {
         currency: 'INR'
       });
 
+      const user = await Users.findById(userId);
+      if (!user) {
+        console.error('User not found for invoice email, userId:', userId);
+      } 
       // Prepare email content
       const mailOptions = {
         from: 'info@unlockstartup.com',
-        to: contact_email,
+        to: user.email,
         subject: 'Your Pitch Has Been Submitted Successfully',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e6e6e6; border-radius: 5px;">
@@ -1206,7 +1229,6 @@ exports.getInvestorPitchStatistics = async (req, res) => {
         recentPitches: recentPitchList
       }
     });
-
   } catch (error) {
     console.error('Error fetching investor pitch statistics:', error);
     res.status(500).json({
@@ -1274,8 +1296,6 @@ exports.createPitchOrder = async (req, res) => {
 
 exports.verifyPitchPayment = async (req, res) => {
   try {
-    console.log('Verify pitch payment request received:', req.body);
-    
     const { 
       razorpay_order_id, 
       razorpay_payment_id, 
@@ -1283,9 +1303,6 @@ exports.verifyPitchPayment = async (req, res) => {
       investorId,
       userId
     } = req.body;
-    
-    console.log('Extracted userId:', userId);
-    console.log('Extracted investorId:', investorId);
     
     if (!userId) {
       console.error('Missing userId in verify pitch payment request');
@@ -1331,7 +1348,6 @@ exports.verifyPitchPayment = async (req, res) => {
     
     // Save payment record
     await payment.save();
-    console.log('Payment record saved successfully:', payment._id);
 
     // Get user details for the invoice
     const user = await Users.findById(userId);
@@ -1384,8 +1400,6 @@ exports.verifyPitchPayment = async (req, res) => {
 
         // Generate invoice number
         const invoiceNumber = `INV-${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}-${payment._id.toString().slice(-6)}`;
-
-        // Prepare email content with invoice
         const mailOptions = {
           from: '"Unlock Startup" <info@unlockstartup.com>',
           to: user.email,
@@ -1450,14 +1464,10 @@ exports.verifyPitchPayment = async (req, res) => {
             </div>
           `,
         };
-
-        console.log('Sending invoice email to:', user.email);
         
         // Send the invoice email
         try {
           const info = await transporter.sendMail(mailOptions);
-          console.log('Invoice email sent successfully:', info.messageId);
-          console.log('Email preview URL:', nodemailer.getTestMessageUrl(info));
         } catch (emailSendError) {
           console.error('Error sending invoice email:', emailSendError);
         }
@@ -1941,6 +1951,88 @@ exports.updateInvestorDetails = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Internal Server Error"
+        });
+    }
+};
+
+// New function to publish or unpublish investor profile
+exports.publishInvestorProfile = async (req, res) => {
+    try {
+        const { investoremail, isPublished } = req.body;
+
+        if (!investoremail) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is required"
+            });
+        }
+
+        // Find investor by email
+        const investor = await InvestorUser.findOne({ investoremail });
+        
+        if (!investor) {
+            return res.status(404).json({
+                success: false,
+                message: "Investor not found"
+            });
+        }
+
+        // Update the profile publication status
+        const updatedInvestor = await InvestorUser.findOneAndUpdate(
+            { investoremail },
+            { $set: { isProfilePublished: isPublished !== undefined ? isPublished : true } },
+            { new: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: isPublished !== false ? "Profile published successfully" : "Profile unpublished successfully",
+            data: updatedInvestor
+        });
+
+    } catch (error) {
+        console.error("Profile publication error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+// Get investor's profile publication status
+exports.getProfilePublicationStatus = async (req, res) => {
+    try {
+        const { investoremail } = req.query;
+
+        if (!investoremail) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is required"
+            });
+        }
+
+        // Find investor by email and only return the isProfilePublished field
+        const investor = await InvestorUser.findOne({ investoremail }).select('isProfilePublished');
+        
+        if (!investor) {
+            return res.status(404).json({
+                success: false,
+                message: "Investor not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            isProfilePublished: investor.isProfilePublished || false
+        });
+
+    } catch (error) {
+        console.error("Error fetching profile publication status:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
         });
     }
 };

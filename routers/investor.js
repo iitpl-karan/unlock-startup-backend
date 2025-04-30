@@ -37,6 +37,9 @@ router.post("/update-profile", upload.fields([
     { name: 'companyLogo', maxCount: 1 }
 ]), InvestorController.updateInvestorProfile);
 
+// New route to publish/unpublish investor profile
+router.post("/publish-profile", InvestorController.publishInvestorProfile);
+
 router.get("/get-investor-detail", InvestorController.getInvestorDetail);
 
 router.get('/get-all-investors', InvestorController.getAllInvestors);
@@ -60,5 +63,8 @@ router.post("/submit-pitch", upload.fields([
 
 // New route to get investor pitch statistics
 router.get('/get-investor-pitch-statistics/:investorId', InvestorController.getInvestorPitchStatistics);
+
+// Route to get investor's profile publication status
+router.get("/profile-publication-status", InvestorController.getProfilePublicationStatus);
 
 module.exports = router;

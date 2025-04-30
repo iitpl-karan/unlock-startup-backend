@@ -18,7 +18,8 @@ const InvestorUser = new Schema({
   responseTime: { type: String, default: '' },
   fundingAmount: { type: String, default: '' },
   portfolio: { type: String, default: '' },
-  investorImage: { type: String, default: '/assets/images/investor/Investor-item1.webp' },
+  isProfilePublished: { type: Boolean, default: false }, // Track if investor has published their profile
+  investorImage: { type: String, default: '' },
   // Company Details
   companyDetails: {
     fullName: { type: String, default: '' },

@@ -1,5 +1,5 @@
-MONGO_URL=mongodb+srv://manishkumar:ZSAKAGqgNvMjhhyr@cluster0.c2nto8w.mongodb.net/UnlockStartup?retryWrites=true&w=majority&appName=Cluster0
-# MONGO_URL=mongodb+srv://unlock:k4Bbfc3HD$vnd-p@unlockstartup.l2acc.mongodb.net/UnlockStartup?retryWrites=true&w=majority&appName=UnlockStartup
+# MONGO_URL=mongodb+srv://manishkumar:ZSAKAGqgNvMjhhyr@cluster0.c2nto8w.mongodb.net/UnlockStartup?retryWrites=true&w=majority&appName=Cluster0
+MONGO_URL=mongodb+srv://unlock:k4Bbfc3HD$vnd-p@unlockstartup.l2acc.mongodb.net/UnlockStartup?retryWrites=true&w=majority&appName=UnlockStartup
 
 ACCESS_TOKEN_SECRET=accesstokensecretkey
 JWT_SECRET=secretkey
