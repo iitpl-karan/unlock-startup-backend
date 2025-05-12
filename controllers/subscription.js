@@ -10,7 +10,7 @@ const jwt = require("jsonwebtoken");
 
 // Create Razorpay instance - use the same credentials that work in the challenge upload
 const razorpayInstance = new Razorpay({
-  key_id: "rzp_live_g1FdyUyG50U2Rq", // Live key that's working in challenge upload
+  key_id: "rzp_test_LHVztjvE6284Fc", // Live key that's working in challenge upload
   key_secret: process.env.key_secret, // Secret key from environment variables
 });
 
