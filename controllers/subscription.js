@@ -563,14 +563,90 @@ exports.verifyPayment = async (req, res) => {
       });
     }
 
-    // Find investor user
-    const user = await User.findById(investorId);
+    // UPDATED INVESTOR LOOKUP: First check in InvestorUser collection
+    let user = null;
+    let investorUser = null;
+    let actualUserId = null;
+    
+    // Step 1: First check if this is an InvestorUser ID
+    investorUser = await InvestorUser.findById(investorId);
+    
+    if (investorUser) {
+      console.log(`Found InvestorUser with ID ${investorId}`);
+      
+      // Step 2: If InvestorUser has userId, use that to find the actual User
+      if (investorUser.userId) {
+        console.log(`InvestorUser has userId: ${investorUser.userId}, looking up User`);
+        user = await User.findById(investorUser.userId);
+        
+        if (user) {
+          console.log(`Found User via InvestorUser.userId: ${user._id}`);
+          actualUserId = user._id;
+        } else {
+          console.log(`User with ID ${investorUser.userId} not found`);
+        }
+      }
+      
+      // Step 3: If no user found by userId, try matching by email
+      if (!user && investorUser.investoremail) {
+        console.log(`Looking up User by email: ${investorUser.investoremail}`);
+        user = await User.findOne({ email: investorUser.investoremail });
+        
+        if (user) {
+          console.log(`Found User via email: ${user._id}`);
+          actualUserId = user._id;
+          
+          // Update the relations if they're not set
+          if (!user.investorDetailsId) {
+            user.investorDetailsId = investorUser._id;
+            await user.save();
+            console.log(`Updated User with investorDetailsId: ${investorUser._id}`);
+          }
+          
+          if (!investorUser.userId) {
+            investorUser.userId = user._id;
+            await investorUser.save();
+            console.log(`Updated InvestorUser with userId: ${user._id}`);
+          }
+        }
+      }
+    }
+    
+    // Step 4: If no user found yet, check directly in User collection
     if (!user) {
-      return res.status(404).json({
+      console.log(`No user found via InvestorUser lookup, checking directly with ID: ${investorId}`);
+      user = await User.findById(investorId);
+      
+      if (user) {
+        console.log(`Found User directly with ID: ${user._id}`);
+        actualUserId = user._id;
+        
+        // If the user doesn't have an investorDetailsId but we found an investorUser, link them
+        if (investorUser && !user.investorDetailsId) {
+          user.investorDetailsId = investorUser._id;
+          await user.save();
+          console.log(`Updated User with investorDetailsId: ${investorUser._id}`);
+        }
+      } else {
+        console.log(`User with ID ${investorId} not found`);
+        return res.status(404).json({
           success: false,
-        message: 'Investor not found'
+          message: 'Investor not found. Please check the investor ID.'
+        });
+      }
+    }
+    
+    // Ensure we have a valid user at this point
+    if (!user) {
+      console.log(`No valid user found with investorId: ${investorId}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Investor not found. No matching User record.'
       });
     }
+
+    // Use the actual user ID we found
+    console.log(`Using actualUserId for subscription: ${actualUserId}`);
 
     // Calculate end date based on plan duration
     const startDate = new Date();
@@ -601,9 +677,9 @@ exports.verifyPayment = async (req, res) => {
     console.log(`Plan duration: ${plan.duration}, Plan type: ${plan.planType}`);
     console.log(`Start date: ${startDate}, End date: ${endDate}`);
     
-    // Create a new subscription
+    // Create a new subscription using the actual user ID
     const subscription = new InvestorSubscription({
-      investor: user._id,
+      investor: user._id,  // Using the actual user ID now
       plan: plan._id,
       startDate,
       endDate,
@@ -630,7 +706,7 @@ exports.verifyPayment = async (req, res) => {
       captured: true,
       description: `Subscription to ${plan.name}`,
       paymentType: 'Subscription',
-      user: user._id,
+      user: user._id,  // Using the actual user ID here too
       subscription: savedSubscription._id
     });
 
@@ -644,74 +720,15 @@ exports.verifyPayment = async (req, res) => {
     user.paymentHistory.push(savedPayment._id);
     await user.save();
 
-    // We now have multiple scenarios to handle for InvestorUser updates:
-    
-    // 1. First scenario: If user is an investor, get their investorDetailsId
-    let investorUser = null;
-    
-    if (user.userType === 'Investor' && user.investorDetailsId) {
-      try {
-        console.log(`Looking up InvestorUser by investorDetailsId: ${user.investorDetailsId}`);
-        investorUser = await InvestorUser.findById(user.investorDetailsId);
-        
-        if (investorUser) {
-          console.log(`Found InvestorUser via investorDetailsId: ${investorUser._id}`);
-          investorUser.currentSubscription = savedSubscription._id;
-          if (!investorUser.paymentHistory) {
-            investorUser.paymentHistory = [];
-          }
-          investorUser.paymentHistory.push(savedPayment._id);
-          await investorUser.save();
-          console.log(`Updated InvestorUser ${investorUser._id} with subscription ${savedSubscription._id}`);
-        } else {
-          console.log(`InvestorUser not found with ID ${user.investorDetailsId}`);
-        }
-      } catch (error) {
-        console.error('Error updating InvestorUser with subscription:', error);
-        // Continue as this is not a critical error
+    // Update InvestorUser if we found one
+    if (investorUser) {
+      investorUser.currentSubscription = savedSubscription._id;
+      if (!investorUser.paymentHistory) {
+        investorUser.paymentHistory = [];
       }
-    } else {
-      console.log(`User ${user._id} is not an investor or has no investorDetailsId`);
-    }
-
-    // 2. Second scenario: Check for InvestorUser by email
-    if (!investorUser && user.email) {
-      try {
-        console.log(`Looking up InvestorUser by email: ${user.email}`);
-        const directInvestor = await InvestorUser.findOne({ investoremail: user.email });
-        
-        if (directInvestor) {
-          console.log(`Found InvestorUser via email: ${directInvestor._id}`);
-          
-          // Update currentSubscription
-          directInvestor.currentSubscription = savedSubscription._id;
-          if (!directInvestor.paymentHistory) {
-            directInvestor.paymentHistory = [];
-          }
-          directInvestor.paymentHistory.push(savedPayment._id);
-          
-          // If there's no userId link, set it now
-          if (!directInvestor.userId) {
-            directInvestor.userId = user._id;
-            console.log(`Linked InvestorUser ${directInvestor._id} to User ${user._id}`);
-          }
-          
-          await directInvestor.save();
-          console.log(`Updated InvestorUser ${directInvestor._id} with subscription ${savedSubscription._id}`);
-          
-          // Also update the User model if it doesn't have an investorDetailsId
-          if (!user.investorDetailsId) {
-            user.investorDetailsId = directInvestor._id;
-            await user.save();
-            console.log(`Linked User ${user._id} to InvestorUser ${directInvestor._id}`);
-          }
-        } else {
-          console.log(`No InvestorUser found with email ${user.email}`);
-        }
-      } catch (error) {
-        console.error('Error updating InvestorUser by email with subscription:', error);
-        // Continue as this is not a critical error
-      }
+      investorUser.paymentHistory.push(savedPayment._id);
+      await investorUser.save();
+      console.log(`Updated InvestorUser ${investorUser._id} with subscription ${savedSubscription._id}`);
     }
 
     // Generate JWT token

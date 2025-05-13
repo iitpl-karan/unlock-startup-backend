@@ -717,6 +717,7 @@ exports.submitPitch = async (req, res) => {
       equity: parseFloat(equity),
       description,
       status: 'pending',
+      isInHistory: false, // Explicitly set to false to ensure it appears in query panel
       // Payment information
       payment: {
         paymentId,
@@ -986,6 +987,7 @@ exports.getInvestorPitchesPagination = async (req, res) => {
     const { status } = req.query;
     
     if (!investorId) {
+      console.error('Missing investorId parameter in request');
       return res.status(400).json({
         success: false,
         message: "Investor ID is required"
@@ -995,6 +997,7 @@ exports.getInvestorPitchesPagination = async (req, res) => {
     // Find the investor
     const investor = await InvestorUser.findById(investorId);
     if (!investor) {
+      console.error(`Investor not found with ID: ${investorId}`);
       return res.status(404).json({
         success: false,
         message: "Investor not found"
@@ -1004,12 +1007,14 @@ exports.getInvestorPitchesPagination = async (req, res) => {
     // Build the query
     let query = { 
       investor: investorId,
-      isInHistory: false // Filter out pitches that are in history
+      isInHistory: { $ne: true } // Ensure we're getting all pitches that are NOT marked as in history
     };
     
     if (status && status !== 'all') {
       query.status = status;
     }
+    
+    console.log('Fetching investor pitches with query:', JSON.stringify(query));
     
     // Find all pitches for this investor with populated user data, applying pagination
     const pitches = await InvestorPitch.find(query)
@@ -1021,6 +1026,8 @@ exports.getInvestorPitchesPagination = async (req, res) => {
     // Get total count for pagination
     const totalItems = await InvestorPitch.countDocuments(query);
 
+    console.log(`Found ${pitches.length} pitches out of ${totalItems} total for investor ${investorId}`);
+    
     res.status(200).json({
       success: true,
       data: pitches,
@@ -1554,6 +1561,7 @@ exports.moveToHistory = async (req, res) => {
     // Find the pitch
     const pitch = await InvestorPitch.findById(pitchId);
     if (!pitch) {
+      console.error(`Pitch not found with ID: ${pitchId}`);
       return res.status(404).json({
         success: false,
         message: "Pitch not found"
@@ -1562,9 +1570,20 @@ exports.moveToHistory = async (req, res) => {
 
     // Check if pitch is either accepted or rejected
     if (pitch.status !== 'accepted' && pitch.status !== 'rejected') {
+      console.error(`Cannot move pitch with status ${pitch.status} to history. Pitch ID: ${pitchId}`);
       return res.status(400).json({
         success: false,
         message: "Only accepted or rejected pitches can be moved to history"
+      });
+    }
+
+    // Check if pitch is already in history
+    if (pitch.isInHistory === true) {
+      console.log(`Pitch ${pitchId} is already in history. No action needed.`);
+      return res.status(200).json({
+        success: true,
+        message: "Pitch is already in history",
+        data: pitch
       });
     }
 
@@ -1572,6 +1591,7 @@ exports.moveToHistory = async (req, res) => {
     pitch.isInHistory = true;
     await pitch.save();
 
+    console.log(`Successfully moved pitch ${pitchId} to history`);
     res.status(200).json({
       success: true,
       message: "Pitch moved to history successfully",
