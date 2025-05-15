@@ -8,9 +8,8 @@ exports.getAllDropdownValues = async (req, res) => {
         let filter = {};
         if (dropdownType) {
             filter.dropdownType = dropdownType;
-        }
-        
-        const result = await InvestorDropdown.find(filter).sort({ createdAt: -1 });
+        }   
+        const result = await InvestorDropdown.find(filter).sort({ name: 1 });
         res.status(200).json(result);
     } catch (error) {
         console.error(error);
@@ -36,7 +35,7 @@ exports.getAllDropdownValuesPagination = async (req, res) => {
         const skip = (page - 1) * limit;
         
         const result = await InvestorDropdown.find(filter)
-            .sort({ createdAt: -1 })
+            .sort({ name: 1 })
             .skip(skip)
             .limit(limit);
             

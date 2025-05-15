@@ -1265,7 +1265,7 @@ exports.getInvestorPitchStatistics = async (req, res) => {
     const recentPitchList = await InvestorPitch.find({ investor: investorId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('company_name founder_name status fundingAmount equity createdAt');
+      .select('company_name founder_name contact_email status fundingAmount equity createdAt');
 
     res.status(200).json({
       success: true,
@@ -1467,7 +1467,8 @@ exports.verifyPitchPayment = async (req, res) => {
                     <p style="color: #666; margin: 5px 0;">Date: ${formattedDate}</p>
                   </div>
                   <div style="text-align: right;">
-                    <p style="margin: 5px 0;"><strong>Unlock Startup</strong></p>
+                    <p style="margin: 5px 0;"><strong>World Mirror Innovations Pvt Ltd</strong></p>
+                    <p style="color: #666; margin: 5px 0;">GSTIN: 07AACCW4330J1ZC</p>
                     <p style="color: #666; margin: 5px 0;">contact@unlockstartup.com</p>
                     <p style="color: #666; margin: 5px 0;">+91 9266733959</p>
                   </div>
