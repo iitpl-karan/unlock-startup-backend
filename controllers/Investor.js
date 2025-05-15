@@ -1460,19 +1460,21 @@ exports.verifyPitchPayment = async (req, res) => {
               </div>
               
               <div style="border: 1px solid #e6e6e6; padding: 20px; border-radius: 5px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                  <div>
-                    <h2 style="color: #333; margin: 0;">INVOICE</h2>
-                    <p style="color: #666; margin: 5px 0;">Invoice Number: ${invoiceNumber}</p>
-                    <p style="color: #666; margin: 5px 0;">Date: ${formattedDate}</p>
-                  </div>
-                  <div style="text-align: right;">
-                    <p style="margin: 5px 0;"><strong>World Mirror Innovations Pvt Ltd</strong></p>
-                    <p style="color: #666; margin: 5px 0;">GSTIN: 07AACCW4330J1ZC</p>
-                    <p style="color: #666; margin: 5px 0;">contact@unlockstartup.com</p>
-                    <p style="color: #666; margin: 5px 0;">+91 9266733959</p>
-                  </div>
-                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td width="50%" valign="top">
+                      <h2 style="color: #333; margin: 0;">INVOICE</h2>
+                      <p style="color: #666; margin: 5px 0;">Invoice Number: ${invoiceNumber}</p>
+                      <p style="color: #666; margin: 5px 0;">Date: ${formattedDate}</p>
+                    </td>
+                    <td width="50%" valign="top" align="right">
+                      <p style="margin: 5px 0;"><strong>World Mirror Innovations Pvt Ltd</strong></p>
+                      <p style="color: #666; margin: 5px 0;">GSTIN: 07AACCW4330J1ZC</p>
+                      <p style="color: #666; margin: 5px 0;">contact@unlockstartup.com</p>
+                      <p style="color: #666; margin: 5px 0;">+91 9266733959</p>
+                    </td>
+                  </tr>
+                </table>
 
                 <div style="margin: 20px 0; padding: 10px 0; border-top: 1px solid #e6e6e6; border-bottom: 1px solid #e6e6e6;">
                   <h3 style="color: #333; margin: 0 0 10px 0;">Bill To:</h3>
