@@ -823,7 +823,6 @@ exports.submitPitch = async (req, res) => {
                 <li><strong>Date Submitted:</strong> ${formattedDate}</li>
                 <li><strong>Company Name:</strong> ${company_name}</li>
                 <li><strong>Funding Amount:</strong> ${formattedAmount}</li>
-                <li><strong>Equity Offered:</strong> ${equity}%</li>
                 <li><strong>Status:</strong> Pending Review</li>
               </ul>
             </div>
@@ -876,7 +875,6 @@ exports.submitPitch = async (req, res) => {
                 <li><strong>Company Name:</strong> ${company_name}</li>
                 <li><strong>Industry:</strong> ${industry_type}</li>
                 <li><strong>Funding Amount:</strong> ${formattedAmount}</li>
-                <li><strong>Equity Offered:</strong> ${equity}%</li>
                 <li><strong>Company Stage:</strong> ${company_stage}</li>
               </ul>
             </div>
@@ -1145,7 +1143,6 @@ exports.updatePitchStatus = async (req, res) => {
               <ul>
                 <li><strong>Company:</strong> ${pitch.company_name}</li>
                 <li><strong>Funding Amount:</strong> ₹${parseFloat(pitch.fundingAmount).toLocaleString()}</li>
-                <li><strong>Equity Offered:</strong> ${pitch.equity}%</li>
               </ul>
               ${status === 'accepted' 
                 ? '<p>The investor will contact you soon to discuss the next steps. Please ensure your contact details are up to date.</p>'
