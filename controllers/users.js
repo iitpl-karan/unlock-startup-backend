@@ -998,12 +998,6 @@ exports.getNormalUserPaginaion = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await Users.find({ email: { $ne: "admin@gmail.com" } }).populate('companyDetailsId userDetailsId')
@@ -1438,6 +1432,57 @@ exports.updateUser = async (req, res) => {
       success: false,
       message: "Internal Server Error"
     });
+  }
+};
+
+// Update Individual/Startup user details (avatar, contactNo)
+exports.updateUserDetails = async (req, res) => {
+  try {
+    const { userId, contactNo } = req.body;
+    const avatarFile = req.file;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Find the user
+    const user = await Users.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Only allow for Individual/Startup
+    if (!(user.userType === 'Individual' || user.userType === 'Startup')) {
+      return res.status(400).json({ message: 'User type not allowed for this update' });
+    }
+
+    if (!user.userDetailsId) {
+      return res.status(404).json({ message: 'User details not found' });
+    }
+
+    // Prepare update object
+    const updateData = {};
+    if (contactNo) updateData.contactNo = contactNo;
+    if (avatarFile) updateData.avatar = avatarFile.filename;
+
+    // Update UserDetails
+    const updatedDetails = await UserDetails.findByIdAndUpdate(
+      user.userDetailsId,
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedDetails) {
+      return res.status(404).json({ message: 'User details not found' });
+    }
+
+    return res.status(200).json({
+      message: 'User details updated successfully',
+      data: updatedDetails
+    });
+  } catch (error) {
+    console.error('Error updating user details:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 

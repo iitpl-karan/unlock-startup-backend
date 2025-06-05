@@ -40,6 +40,6 @@ router.post("/google-login", upload.fields([
   { name: 'logo', maxCount: 1 }
 ]), usersController.googleLogin);
 
-
+router.patch("/update-user-details", upload.single('avatar'), usersController.updateUserDetails);
 
 module.exports = router;
